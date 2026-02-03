@@ -3,7 +3,6 @@ package com.erp.enterprise.controller.auth;
 import com.erp.enterprise.dto.auth.*;
 import com.erp.enterprise.security.UserDetailsImpl;
 import com.erp.enterprise.service.auth.AuthService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,12 +77,17 @@ public class AuthController {
         int maxAgeSeconds = jwtResponse.getExpiresInSeconds() != null
                 ? jwtResponse.getExpiresInSeconds().intValue()
                 : jwtExpirationMs / 1000;
-        Cookie jwtCookie = new Cookie("jwt", jwtResponse.getToken());
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(cookieSecure);
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(maxAgeSeconds);
-        response.addCookie(jwtCookie);
+
+        // Use ResponseCookie for modern browser security (SameSite support)
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("jwt", jwtResponse.getToken())
+                .httpOnly(true)
+                .secure(true) // Always secure in production cross-site
+                .path("/")
+                .maxAge(maxAgeSeconds)
+                .sameSite("None") // REQUIRED for cross-site cookies (Vercel -> Render)
+                .build();
+
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
         
         // Return response WITHOUT token (token is in cookie)
         JwtResponse safeResponse = new JwtResponse(
@@ -117,12 +121,14 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(HttpServletResponse response) {
-        Cookie jwtCookie = new Cookie("jwt", null);
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(cookieSecure);
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(0);
-        response.addCookie(jwtCookie);
+        org.springframework.http.ResponseCookie cookie = org.springframework.http.ResponseCookie.from("jwt", null)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("None")
+                .build();
+        response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
         return ResponseEntity.ok(new MessageResponse("Logged out successfully"));
     }
 
