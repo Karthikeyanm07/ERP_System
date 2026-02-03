@@ -94,9 +94,9 @@ public class SecurityConfig {
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
         if (!origins.isEmpty()) {
-            configuration.setAllowedOrigins(origins);
+            configuration.setAllowedOriginPatterns(origins);
         } else {
-            configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+            configuration.setAllowedOriginPatterns(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
         }
         // Allow all standard HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
