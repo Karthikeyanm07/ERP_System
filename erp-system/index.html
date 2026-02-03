@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <script>
+    unction () {
+        t stored = localStorage.getItem('erp-theme');
+          prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            eDark = stored === 'dark' || ((stored === 'system' || !stored) && prefersDark);
+      if (useDark)       .documentElement.classList.add('dark');
+      else docum    cumentent.classLise('dark');
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>erp-system</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

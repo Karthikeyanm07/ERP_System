@@ -1,0 +1,544 @@
+/**
+ * Accounts Page - Finance Module
+ *
+ * Backend DTO: AccountDTO
+ * Required fields: accountCode, accountName, accountType
+ *
+ * Features:
+ * - Search and filter by type/status
+ * - CRUD operations with role-based access
+ * - Toast notifications
+ */
+
+import { useState, useEffect } from "react";
+import { logger } from "../../utils/logger";
+import { useApi } from "../../hooks/useApi";
+import { useAuth } from "../../hooks/useAuth";
+import { financeApi } from "../../api/financeApi";
+import { useToast } from "../../components/common/Toast";
+import Table from "../../components/common/Table";
+import Button from "../../components/common/Button";
+import Modal from "../../components/common/Modal";
+import Input from "../../components/common/Input";
+import Card from "../../components/common/Card";
+import Badge from "../../components/common/Badge";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import {
+  Plus,
+  Wallet,
+  Pencil,
+  Trash2,
+  Search,
+  Filter,
+  RefreshCw,
+} from "lucide-react";
+
+const Accounts = () => {
+  const { execute, loading } = useApi();
+  const { hasAnyRole } = useAuth();
+  const toast = useToast();
+
+  // Role-based permissions
+  const canManageAccounts = hasAnyRole(["ROLE_ACCOUNTANT", "ROLE_ADMIN"]);
+  const canDeleteAccounts = hasAnyRole(["ROLE_ADMIN"]);
+
+  const [accounts, setAccounts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [typeFilter, setTypeFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  // Form data matching AccountDTO
+  const [formData, setFormData] = useState({
+    accountCode: "",
+    accountName: "",
+    accountType: "ASSET",
+    parentAccountId: "",
+    isActive: true,
+  });
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      const data = await execute(financeApi.getAccounts);
+      setAccounts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      logger.error("Error fetching accounts", error);
+      toast.error("Failed to load accounts");
+      setAccounts([]);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      accountCode: "",
+      accountName: "",
+      accountType: "ASSET",
+      parentAccountId: "",
+      isActive: true,
+    });
+    setErrors({});
+    setEditingAccount(null);
+  };
+
+  const handleAdd = () => {
+    resetForm();
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (account) => {
+    setEditingAccount(account);
+    setFormData({
+      accountCode: account.accountCode || "",
+      accountName: account.accountName || "",
+      accountType: account.accountType || "ASSET",
+      parentAccountId: account.parentAccountId?.toString() || "",
+      isActive: account.isActive !== false,
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = (account) => {
+    setAccountToDelete(account);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!accountToDelete) return;
+
+    try {
+      await financeApi.deleteAccount(accountToDelete.id);
+      toast.success("Account deleted successfully");
+      await fetchAccounts();
+      setIsDeleteDialogOpen(false);
+      setAccountToDelete(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Error deleting account");
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.accountCode.trim()) {
+      newErrors.accountCode = "Account code is required";
+    }
+    if (!formData.accountName.trim()) {
+      newErrors.accountName = "Account name is required";
+    }
+    if (!formData.accountType) {
+      newErrors.accountType = "Account type is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      toast.warning("Please fix the form errors");
+      return;
+    }
+
+    setFormLoading(true);
+
+    const submitData = {
+      ...formData,
+      parentAccountId: formData.parentAccountId
+        ? parseInt(formData.parentAccountId)
+        : null,
+    };
+
+    try {
+      if (editingAccount) {
+        await financeApi.updateAccount(editingAccount.id, submitData);
+        toast.success("Account updated successfully");
+      } else {
+        await financeApi.createAccount(submitData);
+        toast.success("Account created successfully");
+      }
+      await fetchAccounts();
+      setIsModalOpen(false);
+      resetForm();
+    } catch (error) {
+      logger.error("Error saving account", error);
+      toast.error(error.response?.data?.message || "Error saving account");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Filter accounts
+  const filteredAccounts = accounts.filter((a) => {
+    const matchesSearch =
+      a.accountCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.accountName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === "ALL" || a.accountType === typeFilter;
+    const matchesStatus =
+      statusFilter === "ALL" ||
+      (statusFilter === "ACTIVE" ? a.isActive !== false : a.isActive === false);
+
+    return matchesSearch && matchesType && matchesStatus;
+  });
+
+  const getTypeTotal = (type) => {
+    return accounts
+      .filter((a) => a.accountType === type)
+      .reduce((sum, a) => sum + (parseFloat(a.balance) || 0), 0);
+  };
+
+  const getTypeBadge = (type) => {
+    const variants = {
+      ASSET: "success",
+      LIABILITY: "danger",
+      EQUITY: "primary",
+      REVENUE: "success",
+      EXPENSE: "warning",
+    };
+    return <Badge variant={variants[type] || "default"}>{type}</Badge>;
+  };
+
+  const columns = [
+    {
+      key: "accountCode",
+      header: "Code",
+      render: (value) => (
+        <span className="font-mono text-sm bg-gray-100 dark:bg-slate-700/70 text-gray-800 dark:text-slate-100 px-2 py-1 rounded">
+          {value}
+        </span>
+      ),
+    },
+    {
+      key: "accountName",
+      header: "Account Name",
+      render: (value) => (
+        <span className="font-medium text-gray-900 dark:text-gray-100">
+          {value}
+        </span>
+      ),
+    },
+    {
+      key: "accountType",
+      header: "Type",
+      render: (value) => getTypeBadge(value),
+    },
+    {
+      key: "parentAccountName",
+      header: "Parent",
+      render: (value) =>
+        value || <span className="text-gray-400 dark:text-gray-500">—</span>,
+    },
+    {
+      key: "balance",
+      header: "Balance",
+      render: (value) => {
+        const amount = parseFloat(value) || 0;
+        return (
+          <span
+            className={`font-semibold ${
+              amount < 0
+                ? "text-red-600 dark:text-red-400"
+                : "text-gray-900 dark:text-gray-100"
+            }`}
+          >
+            ${Math.abs(amount).toLocaleString()}
+          </span>
+        );
+      },
+    },
+    {
+      key: "isActive",
+      header: "Status",
+      render: (value) => (
+        <Badge variant={value !== false ? "success" : "default"} dot>
+          {value !== false ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Chart of Accounts
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Manage financial accounts
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={fetchAccounts}>
+            <RefreshCw size={18} />
+          </Button>
+          {canManageAccounts && (
+            <Button onClick={handleAdd}>
+              <Plus size={20} />
+              Add Account
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+          <p className="text-gray-600 text-sm font-medium">Assets</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">
+            ${getTypeTotal("ASSET").toLocaleString()}
+          </p>
+        </Card>
+        <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
+          <p className="text-gray-600 text-sm font-medium">Liabilities</p>
+          <p className="text-2xl font-bold text-red-600 mt-1">
+            ${getTypeTotal("LIABILITY").toLocaleString()}
+          </p>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+          <p className="text-gray-600 text-sm font-medium">Equity</p>
+          <p className="text-2xl font-bold text-blue-600 mt-1">
+            ${getTypeTotal("EQUITY").toLocaleString()}
+          </p>
+        </Card>
+        <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+          <p className="text-gray-600 text-sm font-medium">Revenue</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1">
+            ${getTypeTotal("REVENUE").toLocaleString()}
+          </p>
+        </Card>
+        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
+          <p className="text-gray-600 text-sm font-medium">Expenses</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">
+            ${getTypeTotal("EXPENSE").toLocaleString()}
+          </p>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card padding={false} className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Filter size={18} className="text-gray-500 dark:text-gray-400" />
+          <span className="font-medium text-gray-700 dark:text-gray-300">
+            Filters
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+              size={20}
+            />
+            <input
+              type="text"
+              placeholder="Search by code or name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            />
+          </div>
+
+          {/* Type Filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          >
+            <option value="ALL">All Types</option>
+            <option value="ASSET">Assets</option>
+            <option value="LIABILITY">Liabilities</option>
+            <option value="EQUITY">Equity</option>
+            <option value="REVENUE">Revenue</option>
+            <option value="EXPENSE">Expenses</option>
+          </select>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          >
+            <option value="ALL">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="INACTIVE">Inactive</option>
+          </select>
+        </div>
+      </Card>
+
+      {/* Table */}
+      <Table
+        columns={columns}
+        data={filteredAccounts}
+        loading={loading}
+        emptyMessage="No accounts found"
+        actions={
+          canManageAccounts
+            ? (row) => (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(row)}
+                    className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
+                    title="Edit account"
+                  >
+                    <Pencil size={18} />
+                  </button>
+                  {canDeleteAccounts && (
+                    <button
+                      onClick={() => handleDelete(row)}
+                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors"
+                      title="Delete account"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+              )
+            : null
+        }
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Account"
+        message={`Are you sure you want to delete account "${accountToDelete?.accountName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+      />
+
+      {/* Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingAccount ? "Edit Account" : "Add Account"}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} loading={formLoading}>
+              {editingAccount ? "Update" : "Create"} Account
+            </Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Account Code *"
+              name="accountCode"
+              value={formData.accountCode}
+              onChange={handleChange}
+              placeholder="1001"
+              error={errors.accountCode}
+              disabled={editingAccount} // Can't change code when editing
+            />
+            <Input
+              label="Account Name *"
+              name="accountName"
+              value={formData.accountName}
+              onChange={handleChange}
+              placeholder="Cash"
+              error={errors.accountName}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Account Type *
+              </label>
+              <select
+                name="accountType"
+                value={formData.accountType}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-400 ${
+                  errors.accountType
+                    ? "border-red-500 dark:border-red-500"
+                    : "border-gray-300 dark:border-gray-600"
+                }`}
+              >
+                <option value="ASSET">Asset</option>
+                <option value="LIABILITY">Liability</option>
+                <option value="EQUITY">Equity</option>
+                <option value="REVENUE">Revenue</option>
+                <option value="EXPENSE">Expense</option>
+              </select>
+              {errors.accountType && (
+                <p className="text-red-500 dark:text-red-400 text-xs mt-1">
+                  {errors.accountType}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Parent Account
+              </label>
+              <select
+                name="parentAccountId"
+                value={formData.parentAccountId}
+                onChange={handleChange}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              >
+                <option value="">None (Top Level)</option>
+                {accounts
+                  .filter((a) => a.id !== editingAccount?.id) // Can't be parent of itself
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.accountCode} - {a.accountName}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {editingAccount && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="isActive"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={handleChange}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+              />
+              <label
+                htmlFor="isActive"
+                className="text-sm text-gray-700 dark:text-gray-300"
+              >
+                Active
+              </label>
+            </div>
+          )}
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default Accounts;

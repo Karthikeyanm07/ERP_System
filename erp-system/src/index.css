@@ -1,0 +1,99 @@
+/**
+ * Global Styles with Tailwind v4
+ * 
+ * Explanation:
+ * - Imports Tailwind base, components, and utilities
+ * - Custom scrollbar styling
+ * - Global font and smoothing
+ */
+
+@import "tailwindcss";
+
+/* Tailwind v4: class-based dark mode (toggle via .dark on html) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  * {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+}
+
+/* Dark mode: native select and option - dark background, light text (no dark: prefix; we're already inside .dark) */
+.dark select {
+  @apply bg-gray-800 border-gray-600 text-gray-100;
+}
+.dark select option {
+  background-color: rgb(31 41 55);
+  color: rgb(243 244 246);
+}
+
+/* Dark mode: table body cells - ensure text is visible (overrides inline dark text in column renders) */
+.dark table tbody td {
+  @apply text-gray-100;
+}
+.dark table tbody td [class*="text-gray-9"],
+.dark
+  table
+  tbody
+  td
+  [class*="text-gray-6"]:not([class*="text-green"]):not(
+    [class*="text-red"]
+  ):not([class*="text-blue"]):not([class*="text-yellow"]) {
+  color: inherit;
+}
+
+/* Dark mode: raw filter inputs (pages that use input without Input component) */
+.dark input[type="text"].rounded-lg,
+.dark input[type="search"].rounded-lg {
+  @apply bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-400;
+}
+
+/* Reusable form control - use on filter selects/inputs for dark support when not using Input component */
+.form-control-dark-support {
+  @apply border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-blue-400;
+}
+
+@layer components {
+  /* Smooth transitions for interactive elements */
+  .transition-smooth {
+    @apply transition-all duration-200 ease-in-out;
+  }
+}
+
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
