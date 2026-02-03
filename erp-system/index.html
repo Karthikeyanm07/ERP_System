@@ -3,12 +3,12 @@
 
 <head>
   <script>
-    unction () {
-        t stored = localStorage.getItem('erp-theme');
-          prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            eDark = stored === 'dark' || ((stored === 'system' || !stored) && prefersDark);
-      if (useDark)       .documentElement.classList.add('dark');
-      else docum    cumentent.classLise('dark');
+    (function () {
+      const stored = localStorage.getItem('erp-theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const useDark = stored === 'dark' || ((stored === 'system' || !stored) && prefersDark);
+      if (useDark) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
     })();
   </script>
   <meta charset="UTF-8" />
