@@ -17,13 +17,14 @@ import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { financeApi } from "../../api/financeApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
   ArrowUpCircle,
@@ -240,38 +241,38 @@ const Transactions = () => {
 
   const columns = [
     {
-      key: "transactionCode",
+      accessorKey: "transactionCode",
       header: "Code",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-mono text-sm bg-gray-100 dark:bg-slate-700/70 text-gray-800 dark:text-slate-100 px-2 py-1 rounded">
-          {value}
+          {getValue()}
         </span>
       ),
     },
     {
-      key: "transactionDate",
+      accessorKey: "transactionDate",
       header: "Date",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "description",
+      accessorKey: "description",
       header: "Description",
-      render: (value) => (
-        <span className="font-medium text-gray-900">{value || "-"}</span>
+      cell: ({ getValue }) => (
+        <span className="font-medium text-gray-900 dark:text-gray-100">{getValue() || "-"}</span>
       ),
     },
     {
-      key: "referenceNumber",
+      accessorKey: "referenceNumber",
       header: "Reference",
-      render: (value) => value || <span className="text-gray-400">—</span>,
+      cell: ({ getValue }) => getValue() || <span className="text-gray-400">—</span>,
     },
     {
-      key: "type",
+      accessorKey: "type",
       header: "Type",
-      render: (value, row) => {
+      cell: ({ getValue, row }) => {
         const isIncome =
-          value === "INCOME" ||
-          row.entries?.some((e) => e.entryType === "CREDIT");
+          getValue() === "INCOME" ||
+          row.original.entries?.some((e) => e.entryType === "CREDIT");
         return (
           <Badge variant={isIncome ? "success" : "danger"}>
             {isIncome ? "Income" : "Expense"}
@@ -280,18 +281,17 @@ const Transactions = () => {
       },
     },
     {
-      key: "totalAmount",
+      id: "totalAmount",
       header: "Amount",
-      render: (value, row) => {
-        // Calculate total from entries (sum of debits or credits, they should be equal)
+      cell: ({ row }) => {
         const amount =
-          row.entries?.reduce((sum, entry) => {
+          row.original.entries?.reduce((sum, entry) => {
             return sum + (parseFloat(entry.amount) || 0);
-          }, 0) / 2 || 0; // Divide by 2 since debits + credits are counted
+          }, 0) / 2 || 0;
 
         const isIncome =
-          row.type === "INCOME" ||
-          row.entries?.some((e) => e.entryType === "CREDIT");
+          row.original.type === "INCOME" ||
+          row.original.entries?.some((e) => e.entryType === "CREDIT");
         return (
           <span
             className={`font-semibold ${
@@ -412,7 +412,7 @@ const Transactions = () => {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Transactions</option>
             <option value="INCOME">Income Only</option>
@@ -441,21 +441,20 @@ const Transactions = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredTransactions}
         loading={loading}
         emptyMessage="No transactions found"
+        enableRowSelection
         actions={
           canDeleteTransactions
             ? (row) => (
-                <button
-                  onClick={() => handleDelete(row)}
-                  className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete transaction"
-                >
-                  <Trash2 size={18} />
-                </button>
+                <DropdownActions
+                  actions={[
+                    { label: "Delete Transaction", icon: Trash2, onClick: () => handleDelete(row), variant: "danger" },
+                  ]}
+                />
               )
             : null
         }

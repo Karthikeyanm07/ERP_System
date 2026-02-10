@@ -9,3 +9,5 @@ export { default as Modal } from './Modal';
 export { default as Badge } from './Badge';
 export { default as Loader } from './Loader';
 export { default as Toast, ToastProvider, useToast } from './Toast';
+export { default as SearchBar } from './SearchBar';
+export { default as DropdownActions } from './DropdownActions';

@@ -18,7 +18,7 @@ import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { salesApi } from "../../api/salesApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
@@ -26,9 +26,10 @@ import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import MetricCard from "../../components/common/MetricCard";
+import SearchBar from "../../components/common/SearchBar";
+import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
-  Search,
   Pencil,
   Trash2,
   Users,
@@ -252,51 +253,51 @@ const Customers = () => {
 
   const columns = [
     {
-      key: "name",
+      accessorKey: "name",
       header: "Customer",
-      width: "200px",
-      render: (value, row) => (
+      size: 200,
+      cell: ({ getValue, row }) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
-            {value?.[0]?.toUpperCase() || "C"}
+            {getValue()?.[0]?.toUpperCase() || "C"}
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-gray-900 truncate">{value}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{getValue()}</p>
             <p className="text-xs text-gray-500 font-mono">
-              {row.customerCode}
+              {row.original.customerCode}
             </p>
           </div>
         </div>
       ),
     },
     {
-      key: "contactPerson",
+      accessorKey: "contactPerson",
       header: "Contact",
-      width: "120px",
-      render: (value) => <span className="truncate block">{value || "—"}</span>,
+      size: 120,
+      cell: ({ getValue }) => <span className="truncate block">{getValue() || "—"}</span>,
     },
     {
-      key: "email",
+      accessorKey: "email",
       header: "Email",
-      width: "180px",
-      render: (value) => (
-        <span className="truncate block" title={value}>
-          {value || "—"}
+      size: 180,
+      cell: ({ getValue }) => (
+        <span className="truncate block" title={getValue()}>
+          {getValue() || "—"}
         </span>
       ),
     },
     {
-      key: "phone",
+      accessorKey: "phone",
       header: "Phone",
-      width: "120px",
-      render: (value) => <span className="text-gray-600">{value || "—"}</span>,
+      size: 120,
+      cell: ({ getValue }) => <span className="text-gray-600 dark:text-gray-300">{getValue() || "—"}</span>,
     },
     {
-      key: "creditLimit",
+      accessorKey: "creditLimit",
       header: "Credit",
-      width: "140px",
-      render: (value, row) => {
-        const exceeding = isExceedingCredit(row);
+      size: 140,
+      cell: ({ getValue, row }) => {
+        const exceeding = isExceedingCredit(row.original);
         return (
           <div className="flex items-center gap-1.5">
             <span
@@ -306,7 +307,7 @@ const Customers = () => {
                   : "text-gray-900 dark:text-gray-100"
               }`}
             >
-              ${parseFloat(value || 0).toLocaleString()}
+              ${parseFloat(getValue() || 0).toLocaleString()}
             </span>
             {exceeding && (
               <span className="text-[10px] font-medium text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-500/30 px-1.5 py-0.5 rounded">
@@ -318,19 +319,19 @@ const Customers = () => {
       },
     },
     {
-      key: "isActive",
+      accessorKey: "isActive",
       header: "Status",
-      width: "90px",
-      render: (value) => (
+      size: 90,
+      cell: ({ getValue }) => (
         <span
           className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2.5 py-1 ${
-            value !== false
+            getValue() !== false
               ? "bg-green-100 text-green-700 dark:bg-green-500/30 dark:text-green-200"
               : "bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-200"
           }`}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-          {value !== false ? "Active" : "Inactive"}
+          {getValue() !== false ? "Active" : "Inactive"}
         </span>
       ),
     },
@@ -404,24 +405,16 @@ const Customers = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search customers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search customers..."
+          />
           {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Status</option>
             <option value="ACTIVE">Active Only</option>
@@ -431,7 +424,7 @@ const Customers = () => {
           <select
             value={creditFilter}
             onChange={(e) => setCreditFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Credit Status</option>
             <option value="EXCEEDING">Exceeding Credit Limit</option>
@@ -440,32 +433,26 @@ const Customers = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredCustomers}
         loading={loading}
         emptyMessage="No customers found"
+        enableRowSelection
         actions={
           canManageCustomers
             ? (row) => (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleEdit(row)}
-                    className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  {canDeleteCustomers && (
-                    <button
-                      onClick={() => handleDelete(row)}
-                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
+                <DropdownActions
+                  actions={[
+                    { label: "Edit Customer", icon: Pencil, onClick: () => handleEdit(row) },
+                    ...(canDeleteCustomers
+                      ? [
+                          { divider: true },
+                          { label: "Delete Customer", icon: Trash2, onClick: () => handleDelete(row), variant: "danger" },
+                        ]
+                      : []),
+                  ]}
+                />
               )
             : null
         }

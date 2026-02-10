@@ -27,6 +27,7 @@ import {
   Globe2,
 } from "lucide-react";
 import MetricCard from "../../components/common/MetricCard";
+import DropdownActions from "../../components/common/DropdownActions";
 
 const Suppliers = () => {
   const { execute, loading } = useApi();
@@ -256,12 +257,11 @@ const Suppliers = () => {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleEdit(supplier)}
-                  className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                >
-                  <Pencil size={18} />
-                </button>
+                <DropdownActions
+                  actions={[
+                    { label: "Edit Supplier", icon: Pencil, onClick: () => handleEdit(supplier) },
+                  ]}
+                />
               </div>
 
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">

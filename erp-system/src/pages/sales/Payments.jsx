@@ -10,7 +10,7 @@ import { logger } from "../../utils/logger";
 import { useApi } from "../../hooks/useApi";
 import { salesApi } from "../../api/salesApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
@@ -178,36 +178,36 @@ const Payments = () => {
 
   const columns = [
     {
-      key: "paymentNumber",
+      accessorKey: "paymentNumber",
       header: "Payment #",
-      render: (value) => <span className="font-mono font-medium">{value}</span>,
+      cell: ({ getValue }) => <span className="font-mono font-medium">{getValue()}</span>,
     },
     {
-      key: "invoiceNumber",
+      accessorKey: "invoiceNumber",
       header: "Invoice",
-      render: (value) => value || "-",
+      cell: ({ getValue }) => getValue() || "-",
     },
     {
-      key: "customerName",
+      accessorKey: "customerName",
       header: "Customer",
-      render: (value) => value || "-",
+      cell: ({ getValue }) => getValue() || "-",
     },
     {
-      key: "paymentDate",
+      accessorKey: "paymentDate",
       header: "Date",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "paymentMethod",
+      accessorKey: "paymentMethod",
       header: "Method",
-      render: (value) => getMethodBadge(value),
+      cell: ({ getValue }) => getMethodBadge(getValue()),
     },
     {
-      key: "amount",
+      accessorKey: "amount",
       header: "Amount",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-semibold text-green-600 dark:text-green-400">
-          ₹{parseFloat(value || 0).toLocaleString()}
+          ₹{parseFloat(getValue() || 0).toLocaleString()}
         </span>
       ),
     },
@@ -260,11 +260,12 @@ const Payments = () => {
       </div>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={payments}
         loading={loading}
         emptyMessage="No payments found"
+        enableRowSelection
       />
 
       {/* Modal */}

@@ -11,7 +11,7 @@ import { useState, useEffect, useRef } from "react";
 import { logger } from "../../utils/logger";
 import { useApi } from "../../hooks/useApi";
 import { inventoryApi } from "../../api/inventoryApi";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
@@ -419,49 +419,49 @@ const PurchaseOrders = () => {
 
   const columns = [
     {
-      key: "poNumber",
+      accessorKey: "poNumber",
       header: "Order #",
-      render: (value) => (
-        <span className="font-medium text-blue-600">{value}</span>
+      cell: ({ getValue }) => (
+        <span className="font-medium text-blue-600 dark:text-blue-400">{getValue()}</span>
       ),
     },
     {
-      key: "supplier",
+      id: "supplier",
       header: "Supplier",
-      render: (_, row) => row.supplierName || row.supplier?.name || "-",
+      cell: ({ row }) => row.original.supplierName || row.original.supplier?.name || "-",
     },
     {
-      key: "totalAmount",
+      accessorKey: "totalAmount",
       header: "Amount",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-semibold">
-          ₹{parseFloat(value || 0).toLocaleString()}
+          ₹{parseFloat(getValue() || 0).toLocaleString()}
         </span>
       ),
     },
     {
-      key: "orderDate",
+      accessorKey: "orderDate",
       header: "Order Date",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "expectedDate",
+      accessorKey: "expectedDate",
       header: "Expected",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "status",
+      accessorKey: "status",
       header: "Status",
-      width: "150px",
-      render: (value, row) => (
+      size: 150,
+      cell: ({ getValue, row }) => (
         <StatusDropdown
-          currentStatus={value}
+          currentStatus={getValue()}
           onStatusChange={(action) => {
-            if (action === "APPROVE") handleApprove(row.id);
-            if (action === "RECEIVE") handleReceive(row.id);
-            if (action === "CANCEL") handleCancel(row.id);
+            if (action === "APPROVE") handleApprove(row.original.id);
+            if (action === "RECEIVE") handleReceive(row.original.id);
+            if (action === "CANCEL") handleCancel(row.original.id);
           }}
-          onDelete={() => handleDelete(row.id)}
+          onDelete={() => handleDelete(row.original.id)}
         />
       ),
     },
@@ -547,7 +547,7 @@ const PurchaseOrders = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Statuses</option>
             <option value="PENDING">Pending</option>
@@ -560,7 +560,7 @@ const PurchaseOrders = () => {
           <select
             value={supplierFilter}
             onChange={(e) => setSupplierFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Suppliers</option>
             {suppliers.map((s) => (
@@ -594,12 +594,12 @@ const PurchaseOrders = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredOrders}
         loading={loading}
         emptyMessage="No purchase orders found"
-        actions={null}
+        enableRowSelection
       />
 
       {/* Modal */}

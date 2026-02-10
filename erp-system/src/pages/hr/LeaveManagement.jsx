@@ -16,12 +16,13 @@ import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { hrApi } from "../../api/hrApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Badge from "../../components/common/Badge";
+import DropdownActions from "../../components/common/DropdownActions";
 import { Plus, Calendar, Check, X } from "lucide-react";
 
 const LeaveManagement = () => {
@@ -271,55 +272,55 @@ const LeaveManagement = () => {
 
   const columns = [
     {
-      key: "employee",
+      id: "employee",
       header: "Employee",
-      render: (_, row) => (
+      cell: ({ row }) => (
         <span className="font-medium">
-          {row.employeeName ||
-            `${row.employee?.firstName || ""} ${
-              row.employee?.lastName || ""
+          {row.original.employeeName ||
+            `${row.original.employee?.firstName || ""} ${
+              row.original.employee?.lastName || ""
             }`.trim() ||
             "Unknown"}
         </span>
       ),
     },
     {
-      key: "leaveTypeName",
+      accessorKey: "leaveTypeName",
       header: "Type",
-      render: (value, row) => (
+      cell: ({ getValue, row }) => (
         <Badge variant="primary">
-          {value || row.leaveType?.name || "Leave"}
+          {getValue() || row.original.leaveType?.name || "Leave"}
         </Badge>
       ),
     },
     {
-      key: "startDate",
+      accessorKey: "startDate",
       header: "From",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "endDate",
+      accessorKey: "endDate",
       header: "To",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "daysCount",
+      accessorKey: "daysCount",
       header: "Days",
-      render: (value) => (value ? `${value} day${value > 1 ? "s" : ""}` : "-"),
+      cell: ({ getValue }) => (getValue() ? `${getValue()} day${getValue() > 1 ? "s" : ""}` : "-"),
     },
     {
-      key: "reason",
+      accessorKey: "reason",
       header: "Reason",
-      render: (value) => (
-        <span className="text-gray-600 truncate max-w-[200px] block">
-          {value || "-"}
+      cell: ({ getValue }) => (
+        <span className="text-gray-600 dark:text-gray-300 truncate max-w-[200px] block">
+          {getValue() || "-"}
         </span>
       ),
     },
     {
-      key: "status",
+      accessorKey: "status",
       header: "Status",
-      render: (value) => getStatusBadge(value),
+      cell: ({ getValue }) => getStatusBadge(getValue()),
     },
   ];
 
@@ -340,7 +341,7 @@ const LeaveManagement = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Requests</option>
             <option value="PENDING">Pending Only</option>
@@ -409,7 +410,7 @@ const LeaveManagement = () => {
       </div>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={
           statusFilter === "ALL"
@@ -425,24 +426,14 @@ const LeaveManagement = () => {
         actions={
           canApprove
             ? (row) =>
-                row.status === "PENDING" && (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => showApprovalConfirm(row, "approve")}
-                      className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      title="Approve"
-                    >
-                      <Check size={18} />
-                    </button>
-                    <button
-                      onClick={() => showApprovalConfirm(row, "reject")}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Reject"
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                )
+                row.status === "PENDING" ? (
+                  <DropdownActions
+                    actions={[
+                      { label: "Approve", icon: Check, onClick: () => showApprovalConfirm(row, "approve") },
+                      { label: "Reject", icon: X, onClick: () => showApprovalConfirm(row, "reject"), variant: "danger" },
+                    ]}
+                  />
+                ) : null
             : undefined
         }
       />

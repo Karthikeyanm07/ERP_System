@@ -147,13 +147,13 @@ const MenuItem = ({
       <div className="mb-1">
         <button
           onClick={onToggle}
-          className="w-full flex items-center justify-between px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg transition-all duration-200"
+          className="w-full flex items-center justify-between px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 rounded-lg transition-all duration-200 overflow-hidden"
         >
-          <div className="flex items-center gap-3">
-            <Icon size={20} />
-            <span className="font-medium">{item.name}</span>
+          <div className="flex items-center gap-3 overflow-hidden">
+            <Icon size={20} className="shrink-0" />
+            <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
           </div>
-          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+          {isExpanded ? <ChevronDown size={18} className="shrink-0" /> : <ChevronRight size={18} className="shrink-0" />}
         </button>
 
         {isExpanded && (
@@ -165,15 +165,15 @@ const MenuItem = ({
                   key={subItem.path}
                   to={subItem.path}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 ${
+                    `flex items-center gap-3 px-4 py-2 rounded-lg transition-all duration-200 overflow-hidden ${
                       isActive
                         ? "bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-medium"
                         : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-200"
                     }`
                   }
                 >
-                  <SubIcon size={18} />
-                  <span>{subItem.name}</span>
+                  <SubIcon size={18} className="shrink-0" />
+                  <span className="whitespace-nowrap overflow-hidden text-ellipsis">{subItem.name}</span>
                 </NavLink>
               );
             })}
@@ -188,15 +188,15 @@ const MenuItem = ({
       to={item.path}
       end
       className={({ isActive }) =>
-        `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+        `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 overflow-hidden ${
           isActive
             ? "bg-blue-600 dark:bg-blue-500 text-white shadow-lg shadow-blue-600/30 dark:shadow-blue-500/30"
             : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
         }`
       }
     >
-      <Icon size={20} />
-      <span className="font-medium">{item.name}</span>
+      <Icon size={20} className="shrink-0" />
+      <span className="font-medium whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
     </NavLink>
   );
 };
@@ -224,7 +224,7 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40 transition-all duration-300 ease-in-out ${
+      className={`fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col z-40 transition-all duration-300 ease-in-out overflow-hidden ${
         isCollapsed ? "w-16" : "w-64"
       }`}
     >
@@ -238,15 +238,15 @@ const Sidebar = () => {
             <Package className="text-white" size={24} />
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 rounded-xl flex items-center justify-center">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 rounded-xl flex items-center justify-center shrink-0">
               <Package className="text-white" size={24} />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+            <div className="overflow-hidden">
+              <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
                 ERP System
               </h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 Enterprise Suite
               </p>
             </div>
@@ -258,7 +258,7 @@ const Sidebar = () => {
       <nav
         className={`flex-1 ${
           isCollapsed ? "p-2" : "p-4"
-        } space-y-1 overflow-y-auto`}
+        } space-y-1 overflow-y-auto overflow-x-hidden`}
       >
         {menuItems.map((item) => (
           <MenuItem

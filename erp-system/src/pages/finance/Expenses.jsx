@@ -17,13 +17,14 @@ import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { financeApi } from "../../api/financeApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
   Receipt,
@@ -268,43 +269,43 @@ const Expenses = () => {
 
   const columns = [
     {
-      key: "expenseCode",
+      accessorKey: "expenseCode",
       header: "Code",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-mono text-sm bg-gray-100 dark:bg-slate-700/70 text-gray-800 dark:text-slate-100 px-2 py-1 rounded">
-          {value}
+          {getValue()}
         </span>
       ),
     },
     {
-      key: "expenseDate",
+      accessorKey: "expenseDate",
       header: "Date",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "category",
+      accessorKey: "category",
       header: "Category",
-      render: (value) => <Badge variant="default">{value}</Badge>,
+      cell: ({ getValue }) => <Badge variant="default">{getValue()}</Badge>,
     },
     {
-      key: "vendorName",
+      accessorKey: "vendorName",
       header: "Vendor",
-      render: (value) =>
-        value || <span className="text-gray-400 dark:text-gray-500">—</span>,
+      cell: ({ getValue }) =>
+        getValue() || <span className="text-gray-400 dark:text-gray-500">—</span>,
     },
     {
-      key: "amount",
+      accessorKey: "amount",
       header: "Amount",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-semibold text-gray-900 dark:text-gray-100">
-          ₹{parseFloat(value || 0).toLocaleString()}
+          ₹{parseFloat(getValue() || 0).toLocaleString()}
         </span>
       ),
     },
     {
-      key: "status",
+      accessorKey: "status",
       header: "Status",
-      render: (value) => getStatusBadge(value),
+      cell: ({ getValue }) => getStatusBadge(getValue()),
     },
   ];
 
@@ -413,7 +414,7 @@ const Expenses = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -426,7 +427,7 @@ const Expenses = () => {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Categories</option>
             {usedCategories.map((c) => (
@@ -458,53 +459,31 @@ const Expenses = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredExpenses}
         loading={loading}
         emptyMessage="No expenses found"
+        enableRowSelection
         actions={
           canManageExpenses
-            ? (row) => (
-                <div className="flex items-center gap-1">
-                  {row.status === "PENDING" && (
-                    <>
-                      <button
-                        onClick={() => handleApprove(row.id)}
-                        className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                        title="Approve"
-                      >
-                        <Check size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleReject(row.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Reject"
-                      >
-                        <X size={18} />
-                      </button>
-                    </>
-                  )}
-                  {row.status === "APPROVED" && (
-                    <button
-                      onClick={() => handleMarkAsPaid(row.id)}
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Mark as Paid"
-                    >
-                      <DollarSign size={18} />
-                    </button>
-                  )}
-                  {(row.status === "PENDING" || row.status === "REJECTED") && (
-                    <button
-                      onClick={() => handleDelete(row)}
-                      className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
-              )
+            ? (row) => {
+                const items = [];
+                if (row.status === "PENDING") {
+                  items.push(
+                    { label: "Approve", icon: Check, onClick: () => handleApprove(row.id) },
+                    { label: "Reject", icon: X, onClick: () => handleReject(row.id), variant: "danger" }
+                  );
+                }
+                if (row.status === "APPROVED") {
+                  items.push({ label: "Mark as Paid", icon: DollarSign, onClick: () => handleMarkAsPaid(row.id) });
+                }
+                if (row.status === "PENDING" || row.status === "REJECTED") {
+                  if (items.length > 0) items.push({ divider: true });
+                  items.push({ label: "Delete", icon: Trash2, onClick: () => handleDelete(row), variant: "danger" });
+                }
+                return items.length > 0 ? <DropdownActions actions={items} /> : null;
+              }
             : null
         }
       />

@@ -10,7 +10,7 @@ import { logger } from "../../utils/logger";
 import { useApi } from "../../hooks/useApi";
 import { salesApi } from "../../api/salesApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
@@ -83,55 +83,55 @@ const Invoices = () => {
 
   const columns = [
     {
-      key: "invoiceNumber",
+      accessorKey: "invoiceNumber",
       header: "Invoice #",
-      render: (value) => <span className="font-mono font-medium">{value}</span>,
+      cell: ({ getValue }) => <span className="font-mono font-medium">{getValue()}</span>,
     },
     {
-      key: "customerName",
+      accessorKey: "customerName",
       header: "Customer",
-      render: (value) => value || "-",
+      cell: ({ getValue }) => getValue() || "-",
     },
     {
-      key: "invoiceDate",
+      accessorKey: "invoiceDate",
       header: "Date",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "dueDate",
+      accessorKey: "dueDate",
       header: "Due Date",
-      render: (value, row) => {
-        const overdue = isOverdue(value, row.status);
+      cell: ({ getValue, row }) => {
+        const overdue = isOverdue(getValue(), row.original.status);
         return (
           <span className={overdue ? "text-red-600 font-medium" : ""}>
-            {value ? new Date(value).toLocaleDateString() : "-"}
+            {getValue() ? new Date(getValue()).toLocaleDateString() : "-"}
             {overdue && <AlertCircle className="inline ml-1" size={14} />}
           </span>
         );
       },
     },
     {
-      key: "totalAmount",
+      accessorKey: "totalAmount",
       header: "Amount",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-semibold">
-          ${parseFloat(value || 0).toLocaleString()}
+          ${parseFloat(getValue() || 0).toLocaleString()}
         </span>
       ),
     },
     {
-      key: "paidAmount",
+      accessorKey: "paidAmount",
       header: "Paid",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="text-green-600 dark:text-green-400">
-          ₹{parseFloat(value || 0).toLocaleString()}
+          ₹{parseFloat(getValue() || 0).toLocaleString()}
         </span>
       ),
     },
     {
-      key: "status",
+      accessorKey: "status",
       header: "Status",
-      render: (value) => getStatusBadge(value),
+      cell: ({ getValue }) => getStatusBadge(getValue()),
     },
   ];
 
@@ -184,7 +184,7 @@ const Invoices = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Status</option>
             <option value="DRAFT">Draft</option>
@@ -197,11 +197,12 @@ const Invoices = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredInvoices}
         loading={loading}
         emptyMessage="No invoices found"
+        enableRowSelection
       />
     </div>
   );

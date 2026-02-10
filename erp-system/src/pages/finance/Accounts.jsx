@@ -16,19 +16,20 @@ import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { financeApi } from "../../api/financeApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import SearchBar from "../../components/common/SearchBar";
+import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
   Wallet,
   Pencil,
   Trash2,
-  Search,
   Filter,
   RefreshCw,
 } from "lucide-react";
@@ -221,39 +222,39 @@ const Accounts = () => {
 
   const columns = [
     {
-      key: "accountCode",
+      accessorKey: "accountCode",
       header: "Code",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-mono text-sm bg-gray-100 dark:bg-slate-700/70 text-gray-800 dark:text-slate-100 px-2 py-1 rounded">
-          {value}
+          {getValue()}
         </span>
       ),
     },
     {
-      key: "accountName",
+      accessorKey: "accountName",
       header: "Account Name",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-medium text-gray-900 dark:text-gray-100">
-          {value}
+          {getValue()}
         </span>
       ),
     },
     {
-      key: "accountType",
+      accessorKey: "accountType",
       header: "Type",
-      render: (value) => getTypeBadge(value),
+      cell: ({ getValue }) => getTypeBadge(getValue()),
     },
     {
-      key: "parentAccountName",
+      accessorKey: "parentAccountName",
       header: "Parent",
-      render: (value) =>
-        value || <span className="text-gray-400 dark:text-gray-500">—</span>,
+      cell: ({ getValue }) =>
+        getValue() || <span className="text-gray-400 dark:text-gray-500">—</span>,
     },
     {
-      key: "balance",
+      accessorKey: "balance",
       header: "Balance",
-      render: (value) => {
-        const amount = parseFloat(value) || 0;
+      cell: ({ getValue }) => {
+        const amount = parseFloat(getValue()) || 0;
         return (
           <span
             className={`font-semibold ${
@@ -268,11 +269,11 @@ const Accounts = () => {
       },
     },
     {
-      key: "isActive",
+      accessorKey: "isActive",
       header: "Status",
-      render: (value) => (
-        <Badge variant={value !== false ? "success" : "default"} dot>
-          {value !== false ? "Active" : "Inactive"}
+      cell: ({ getValue }) => (
+        <Badge variant={getValue() !== false ? "success" : "default"} dot>
+          {getValue() !== false ? "Active" : "Inactive"}
         </Badge>
       ),
     },
@@ -347,25 +348,17 @@ const Accounts = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search by code or name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search by code or name..."
+          />
 
           {/* Type Filter */}
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Types</option>
             <option value="ASSET">Assets</option>
@@ -379,7 +372,7 @@ const Accounts = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Status</option>
             <option value="ACTIVE">Active</option>
@@ -389,32 +382,26 @@ const Accounts = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredAccounts}
         loading={loading}
         emptyMessage="No accounts found"
+        enableRowSelection
         actions={
           canManageAccounts
             ? (row) => (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(row)}
-                    className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded-lg transition-colors"
-                    title="Edit account"
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  {canDeleteAccounts && (
-                    <button
-                      onClick={() => handleDelete(row)}
-                      className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors"
-                      title="Delete account"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
+                <DropdownActions
+                  actions={[
+                    { label: "Edit Account", icon: Pencil, onClick: () => handleEdit(row) },
+                    ...(canDeleteAccounts
+                      ? [
+                          { divider: true },
+                          { label: "Delete Account", icon: Trash2, onClick: () => handleDelete(row), variant: "danger" },
+                        ]
+                      : []),
+                  ]}
+                />
               )
             : null
         }

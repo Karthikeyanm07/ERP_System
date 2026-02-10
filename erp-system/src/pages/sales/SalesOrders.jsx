@@ -10,7 +10,7 @@ import { useApi } from "../../hooks/useApi";
 import { salesApi } from "../../api/salesApi";
 import { inventoryApi } from "../../api/inventoryApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
@@ -429,43 +429,43 @@ const SalesOrders = () => {
 
   const columns = [
     {
-      key: "orderNumber",
+      accessorKey: "orderNumber",
       header: "Order #",
-      render: (value) => <span className="font-mono font-medium">{value}</span>,
+      cell: ({ getValue }) => <span className="font-mono font-medium">{getValue()}</span>,
     },
     {
-      key: "customerName",
+      accessorKey: "customerName",
       header: "Customer",
-      render: (value) => value || "-",
+      cell: ({ getValue }) => getValue() || "-",
     },
     {
-      key: "orderDate",
+      accessorKey: "orderDate",
       header: "Date",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "totalAmount",
+      accessorKey: "totalAmount",
       header: "Total",
-      render: (value) => (
+      cell: ({ getValue }) => (
         <span className="font-semibold">
-          ₹{parseFloat(value || 0).toLocaleString()}
+          ₹{parseFloat(getValue() || 0).toLocaleString()}
         </span>
       ),
     },
     {
-      key: "status",
+      accessorKey: "status",
       header: "Status",
-      width: "150px",
-      render: (value, row) => (
+      size: 150,
+      cell: ({ getValue, row }) => (
         <StatusDropdown
-          currentStatus={value}
+          currentStatus={getValue()}
           onStatusChange={(action) => {
-            if (action === "CONFIRM") handleConfirm(row.id);
-            if (action === "SHIP") handleShip(row.id);
-            if (action === "DELIVER") handleDeliver(row.id);
-            if (action === "CANCEL") handleCancel(row.id);
+            if (action === "CONFIRM") handleConfirm(row.original.id);
+            if (action === "SHIP") handleShip(row.original.id);
+            if (action === "DELIVER") handleDeliver(row.original.id);
+            if (action === "CANCEL") handleCancel(row.original.id);
           }}
-          onDelete={() => handleDelete(row.id)}
+          onDelete={() => handleDelete(row.original.id)}
         />
       ),
     },
@@ -524,7 +524,7 @@ const SalesOrders = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Status</option>
             <option value="PENDING">Pending</option>
@@ -537,12 +537,12 @@ const SalesOrders = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredOrders}
         loading={loading}
         emptyMessage="No orders found"
-        actions={null}
+        enableRowSelection
       />
 
       {/* Modal */}

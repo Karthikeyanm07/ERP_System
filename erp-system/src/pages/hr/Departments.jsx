@@ -23,6 +23,7 @@ import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
   Building2,
@@ -283,22 +284,13 @@ const Departments = () => {
                   </div>
                 </div>
                 {canManageDepartments && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleEdit(dept)}
-                      className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                      title="Edit department"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(dept)}
-                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                      title="Delete department"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  <DropdownActions
+                    actions={[
+                      { label: "Edit Department", icon: Pencil, onClick: () => handleEdit(dept) },
+                      { divider: true },
+                      { label: "Delete Department", icon: Trash2, onClick: () => handleDelete(dept), variant: "danger" },
+                    ]}
+                  />
                 )}
               </div>
 

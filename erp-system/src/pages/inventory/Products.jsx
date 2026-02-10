@@ -17,18 +17,19 @@ import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { inventoryApi } from "../../api/inventoryApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import SearchBar from "../../components/common/SearchBar";
+import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
   Package,
   Pencil,
-  Search,
   Trash2,
   RefreshCw,
   Filter,
@@ -248,64 +249,64 @@ const Products = () => {
 
   const columns = [
     {
-      key: "name",
+      accessorKey: "name",
       header: "Product",
-      width: "240px",
-      render: (value, row) => (
+      size: 240,
+      cell: ({ getValue, row }) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-            <Package className="text-blue-600" size={20} />
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+            <Package className="text-blue-600 dark:text-blue-400" size={20} />
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-gray-900 truncate">{value}</p>
-            <p className="text-xs text-gray-500 font-mono">{row.productCode}</p>
+            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{getValue()}</p>
+            <p className="text-xs text-gray-500 font-mono">{row.original.productCode}</p>
           </div>
         </div>
       ),
     },
     {
-      key: "categoryName",
+      accessorKey: "categoryName",
       header: "Category",
-      width: "120px",
-      render: (value) =>
-        value ? (
-          <Badge variant="default">{value}</Badge>
+      size: 120,
+      cell: ({ getValue }) =>
+        getValue() ? (
+          <Badge variant="default">{getValue()}</Badge>
         ) : (
           <span className="text-gray-400">—</span>
         ),
     },
     {
-      key: "unit",
+      accessorKey: "unit",
       header: "Unit",
-      width: "80px",
-      render: (value) => <span className="text-gray-600">{value || "—"}</span>,
+      size: 80,
+      cell: ({ getValue }) => <span className="text-gray-600 dark:text-gray-300">{getValue() || "—"}</span>,
     },
     {
-      key: "unitPrice",
+      accessorKey: "unitPrice",
       header: "Price",
-      width: "100px",
-      render: (value) => (
-        <span className="font-semibold text-gray-900">
-          ${parseFloat(value || 0).toFixed(2)}
+      size: 100,
+      cell: ({ getValue }) => (
+        <span className="font-semibold text-gray-900 dark:text-gray-100">
+          ${parseFloat(getValue() || 0).toFixed(2)}
         </span>
       ),
     },
     {
-      key: "totalStock",
+      accessorKey: "totalStock",
       header: "Stock",
-      width: "100px",
-      render: (value, row) => (
+      size: 100,
+      cell: ({ getValue, row }) => (
         <div>
-          <span className="font-medium">{value || 0}</span>
-          <span className="text-gray-400 text-xs ml-1">{row.unit}</span>
+          <span className="font-medium">{getValue() || 0}</span>
+          <span className="text-gray-400 text-xs ml-1">{row.original.unit}</span>
         </div>
       ),
     },
     {
-      key: "status",
+      id: "stockStatus",
       header: "Status",
-      width: "110px",
-      render: (_, row) => getStockBadge(row.totalStock, row.reorderLevel),
+      size: 110,
+      cell: ({ row }) => getStockBadge(row.original.totalStock, row.original.reorderLevel),
     },
   ];
 
@@ -407,24 +408,16 @@ const Products = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Search */}
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search by name or code..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search by name or code..."
+          />
           {/* Stock Filter */}
           <select
             value={stockFilter}
             onChange={(e) => setStockFilter(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Stock Levels</option>
             <option value="LOW">Low Stock Only</option>
@@ -434,32 +427,26 @@ const Products = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredProducts}
         loading={loading}
         emptyMessage="No products found"
+        enableRowSelection
         actions={
           canManageProducts
             ? (row) => (
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handleEdit(row)}
-                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="Edit"
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  {canDeleteProducts && (
-                    <button
-                      onClick={() => handleDelete(row)}
-                      className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
+                <DropdownActions
+                  actions={[
+                    { label: "Edit Product", icon: Pencil, onClick: () => handleEdit(row) },
+                    ...(canDeleteProducts
+                      ? [
+                          { divider: true },
+                          { label: "Delete Product", icon: Trash2, onClick: () => handleDelete(row), variant: "danger" },
+                        ]
+                      : []),
+                  ]}
+                />
               )
             : null
         }

@@ -9,7 +9,7 @@ import { logger } from "../../utils/logger";
 import { useApi } from "../../hooks/useApi";
 import { inventoryApi } from "../../api/inventoryApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Card from "../../components/common/Card";
 import MetricCard from "../../components/common/MetricCard";
 import Badge from "../../components/common/Badge";
@@ -147,57 +147,57 @@ const Stock = () => {
 
   const columns = [
     {
-      key: "product",
+      id: "product",
       header: "Product",
-      render: (_, row) => (
+      cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-            <Package className="text-gray-400" size={20} />
+          <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+            <Package className="text-gray-400 dark:text-gray-500" size={20} />
           </div>
           <div>
-            <p className="font-medium text-gray-900">
-              {row.productName || row.name}
+            <p className="font-medium text-gray-900 dark:text-gray-100">
+              {row.original.productName || row.original.name}
             </p>
-            <p className="text-sm text-gray-500">{row.productCode}</p>
+            <p className="text-sm text-gray-500">{row.original.productCode}</p>
           </div>
         </div>
       ),
     },
     {
-      key: "warehouseName",
+      accessorKey: "warehouseName",
       header: "Warehouse",
-      render: (value) => value || "-",
+      cell: ({ getValue }) => getValue() || "-",
     },
     {
-      key: "quantity",
+      accessorKey: "quantity",
       header: "Quantity",
-      render: (value, row) => (
+      cell: ({ getValue, row }) => (
         <div>
-          <span className="font-semibold text-gray-900">{value || 0}</span>
-          <span className="text-gray-400 ml-1">{row.unit || "PCS"}</span>
+          <span className="font-semibold text-gray-900 dark:text-gray-100">{getValue() || 0}</span>
+          <span className="text-gray-400 ml-1">{row.original.unit || "PCS"}</span>
         </div>
       ),
     },
     {
-      key: "reorderLevel",
+      accessorKey: "reorderLevel",
       header: "Reorder Level",
-      render: (value) => value ?? "-",
+      cell: ({ getValue }) => getValue() ?? "-",
     },
     {
-      key: "value",
+      id: "value",
       header: "Value",
-      render: (_, row) => {
-        const value = (row.quantity || 0) * (row.unitPrice || 0);
+      cell: ({ row }) => {
+        const value = (row.original.quantity || 0) * (row.original.unitPrice || 0);
         return <span className="font-medium">₹{value.toLocaleString()}</span>;
       },
     },
     {
-      key: "status",
+      id: "stockStatus",
       header: "Status",
-      render: (_, row) => {
+      cell: ({ row }) => {
         const { variant, label } = getStockStatus(
-          row.quantity,
-          row.reorderLevel
+          row.original.quantity,
+          row.original.reorderLevel
         );
         return <Badge variant={variant}>{label}</Badge>;
       },
@@ -278,7 +278,7 @@ const Stock = () => {
           <select
             value={warehouseFilter}
             onChange={(e) => setWarehouseFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
           >
             <option value="ALL">All Warehouses</option>
             {warehouses.map((w) => (
@@ -304,11 +304,12 @@ const Stock = () => {
       </Card>
 
       {/* Stock Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={displayData}
         loading={loading}
         emptyMessage="No stock data available"
+        enableRowSelection
       />
     </div>
   );

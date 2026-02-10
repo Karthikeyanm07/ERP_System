@@ -97,3 +97,19 @@
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+/* Dropdown menu open animation */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-in 0.15s ease-out;
+}

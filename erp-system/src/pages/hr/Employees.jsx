@@ -18,19 +18,19 @@ import { useToast } from "../../components/common/Toast";
 import { useAuth } from "../../hooks/useAuth";
 import { useCachedData } from "../../hooks/useCachedData";
 import { useDataCache } from "../../context/DataCacheContext";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
 import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import SearchBar from "../../components/common/SearchBar";
+import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
-  Search,
   Pencil,
   Trash2,
-  RefreshCw,
   Filter,
   ChevronDown,
 } from "lucide-react";
@@ -397,59 +397,59 @@ const Employees = () => {
 
   const columns = [
     {
-      key: "name",
+      accessorKey: "firstName",
       header: "Employee",
-      width: "220px",
-      render: (_, row) => (
+      size: 220,
+      cell: ({ row }) => (
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
-            {row.firstName?.[0]?.toUpperCase() || "E"}
+            {row.original.firstName?.[0]?.toUpperCase() || "E"}
           </div>
           <div className="min-w-0">
-            <p className="font-medium text-gray-900 truncate">
-              {row.firstName} {row.lastName}
+            <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+              {row.original.firstName} {row.original.lastName}
             </p>
-            <p className="text-xs text-gray-500">{row.employeeCode}</p>
+            <p className="text-xs text-gray-500">{row.original.employeeCode}</p>
           </div>
         </div>
       ),
     },
     {
-      key: "email",
+      accessorKey: "email",
       header: "Email",
-      width: "200px",
-      render: (value) => (
-        <span className="truncate block" title={value}>
-          {value || "—"}
+      size: 200,
+      cell: ({ getValue }) => (
+        <span className="truncate block" title={getValue()}>
+          {getValue() || "—"}
         </span>
       ),
     },
     {
-      key: "designation",
+      accessorKey: "designation",
       header: "Designation",
-      width: "160px",
-      render: (value) => (
-        <span className="truncate block" title={value}>
-          {value || "—"}
+      size: 160,
+      cell: ({ getValue }) => (
+        <span className="truncate block" title={getValue()}>
+          {getValue() || "—"}
         </span>
       ),
     },
     {
-      key: "departmentName",
+      accessorKey: "departmentName",
       header: "Department",
-      width: "150px",
-      render: (value) => (
-        <span className="truncate block" title={value}>
-          {value || "—"}
+      size: 150,
+      cell: ({ getValue }) => (
+        <span className="truncate block" title={getValue()}>
+          {getValue() || "—"}
         </span>
       ),
     },
     {
-      key: "status",
+      accessorKey: "status",
       header: "Status",
-      width: "140px",
-      render: (value, row) => {
-        const status = value || "ACTIVE";
+      size: 140,
+      cell: ({ getValue, row }) => {
+        const status = getValue() || "ACTIVE";
         const statusConfig = {
           ACTIVE: {
             bg: "bg-green-100",
@@ -476,14 +476,13 @@ const Employees = () => {
 
         const currentConfig = statusConfig[status];
 
-        // If user can manage, show custom dropdown
         if (canManageEmployees) {
           return (
             <StatusDropdown
               currentStatus={status}
               statusConfig={statusConfig}
               onStatusChange={(newStatus) =>
-                handleStatusChange(row.id, newStatus)
+                handleStatusChange(row.original.id, newStatus)
               }
             />
           );
@@ -493,9 +492,7 @@ const Employees = () => {
           <span
             className={`inline-flex items-center gap-1.5 text-xs font-medium border rounded-md px-2.5 py-1 ${currentConfig.bg} ${currentConfig.text} ${currentConfig.border}`}
           >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${currentConfig.dot}`}
-            ></span>
+            <span className={`w-1.5 h-1.5 rounded-full ${currentConfig.dot}`}></span>
             {status}
           </span>
         );
@@ -559,26 +556,18 @@ const Employees = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search by name, email, or code..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            />
-          </div>
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search by name, email, or code..."
+          />
 
           {/* Status Filter */}
           <div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
             >
               <option value="ALL">All Statuses</option>
               <option value="ACTIVE">Active</option>
@@ -592,7 +581,7 @@ const Employees = () => {
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
             >
               <option value="ALL">All Departments</option>
               {departments.map((d) => (
@@ -606,30 +595,22 @@ const Employees = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={filteredEmployees}
         loading={loading}
         emptyMessage="No employees found"
+        enableRowSelection
         actions={
           canManageEmployees
             ? (row) => (
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleEdit(row)}
-                    className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                    title="Edit employee"
-                  >
-                    <Pencil size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(row)}
-                    className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                    title="Delete employee (mark as terminated)"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                <DropdownActions
+                  actions={[
+                    { label: "Edit Employee", icon: Pencil, onClick: () => handleEdit(row) },
+                    { divider: true },
+                    { label: "Delete Employee", icon: Trash2, onClick: () => handleDelete(row), variant: "danger" },
+                  ]}
+                />
               )
             : null
         }

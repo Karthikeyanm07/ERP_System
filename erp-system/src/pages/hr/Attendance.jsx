@@ -12,7 +12,7 @@ import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { hrApi } from "../../api/hrApi";
 import { useToast } from "../../components/common/Toast";
-import Table from "../../components/common/Table";
+import DataTable from "../../components/common/DataTable";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
@@ -196,17 +196,17 @@ const Attendance = () => {
 
   const columns = [
     {
-      key: "employee",
+      id: "employee",
       header: "Employee",
-      render: (_, row) => (
+      cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-medium text-sm">
-            {row.employeeName?.[0] || row.employee?.firstName?.[0] || "E"}
+          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 font-medium text-sm">
+            {row.original.employeeName?.[0] || row.original.employee?.firstName?.[0] || "E"}
           </div>
           <span className="font-medium">
-            {row.employeeName ||
-              `${row.employee?.firstName || ""} ${
-                row.employee?.lastName || ""
+            {row.original.employeeName ||
+              `${row.original.employee?.firstName || ""} ${
+                row.original.employee?.lastName || ""
               }`.trim() ||
               "Unknown"}
           </span>
@@ -214,33 +214,33 @@ const Attendance = () => {
       ),
     },
     {
-      key: "date",
+      accessorKey: "date",
       header: "Date",
-      render: (value) => (value ? new Date(value).toLocaleDateString() : "-"),
+      cell: ({ getValue }) => (getValue() ? new Date(getValue()).toLocaleDateString() : "-"),
     },
     {
-      key: "clockIn",
+      accessorKey: "clockIn",
       header: "Clock In",
-      render: (value) => (
-        <span className="text-green-600 font-medium">{value || "-"}</span>
+      cell: ({ getValue }) => (
+        <span className="text-green-600 dark:text-green-400 font-medium">{getValue() || "-"}</span>
       ),
     },
     {
-      key: "clockOut",
+      accessorKey: "clockOut",
       header: "Clock Out",
-      render: (value) => (
-        <span className="text-red-600 font-medium">{value || "-"}</span>
+      cell: ({ getValue }) => (
+        <span className="text-red-600 dark:text-red-400 font-medium">{getValue() || "-"}</span>
       ),
     },
     {
-      key: "status",
+      accessorKey: "status",
       header: "Status",
-      render: (value) => getStatusBadge(value),
+      cell: ({ getValue }) => getStatusBadge(getValue()),
     },
     {
-      key: "remarks",
+      accessorKey: "remarks",
       header: "Remarks",
-      render: (value) => value || "-",
+      cell: ({ getValue }) => getValue() || "-",
     },
   ];
 
@@ -324,7 +324,7 @@ const Attendance = () => {
       </Card>
 
       {/* Table */}
-      <Table
+      <DataTable
         columns={columns}
         data={attendance}
         loading={loading}
