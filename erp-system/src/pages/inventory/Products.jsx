@@ -24,7 +24,6 @@ import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import SearchBar from "../../components/common/SearchBar";
 import DropdownActions from "../../components/common/DropdownActions";
 import {
   Plus,
@@ -393,39 +392,6 @@ const Products = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card padding={false} className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Filter size={18} className="text-gray-500" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              Filters
-            </span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            Clear All
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Search */}
-          <SearchBar
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder="Search by name or code..."
-          />
-          {/* Stock Filter */}
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
-          >
-            <option value="ALL">All Stock Levels</option>
-            <option value="LOW">Low Stock Only</option>
-            <option value="OUT">Out of Stock Only</option>
-          </select>
-        </div>
-      </Card>
-
       {/* Table */}
       <DataTable
         columns={columns}
@@ -433,6 +399,18 @@ const Products = () => {
         loading={loading}
         emptyMessage="No products found"
         enableRowSelection
+        searchPlaceholder="Search by name or code..."
+        filters={
+          <select
+            value={stockFilter}
+            onChange={(e) => setStockFilter(e.target.value)}
+            className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm cursor-pointer focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
+          >
+            <option value="ALL">All Stock Levels</option>
+            <option value="LOW">Low Stock Only</option>
+            <option value="OUT">Out of Stock Only</option>
+          </select>
+        }
         actions={
           canManageProducts
             ? (row) => (

@@ -66,6 +66,8 @@ const DataTable = ({
   pageSize: defaultPageSize = 10,
   globalFilter: controlledGlobalFilter,
   onGlobalFilterChange: controlledOnGlobalFilterChange,
+  searchPlaceholder = "Search all columns...",
+  filters,
 }) => {
   /* ── State ── */
   const [sorting, setSorting] = useState([]);
@@ -176,6 +178,7 @@ const DataTable = ({
   /* ── Helpers ── */
   const headerGroups = table.getHeaderGroups();
   const rows = table.getRowModel().rows;
+  const hasToolbar = enableFiltering || enableRowSelection || filters;
 
   /* ─────────────── RENDER ─────────────── */
 
@@ -183,6 +186,12 @@ const DataTable = ({
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* Skeleton toolbar */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-700/50">
+          <div className="h-9 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse w-56" />
+          <div className="h-9 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse w-32" />
+          <div className="h-9 bg-gray-100 dark:bg-gray-700 rounded-lg animate-pulse w-32" />
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -219,15 +228,15 @@ const DataTable = ({
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-      {/* ── Toolbar: Search + Selection Info ── */}
-      {(enableFiltering || enableRowSelection) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-700/50">
+      {/* ── Toolbar: Search + Filters + Selection Info ── */}
+      {hasToolbar && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-700/50">
           {/* Global Search */}
           {enableFiltering && (
-            <div className="relative group min-w-[220px] max-w-sm flex-1">
+            <div className="relative group min-w-[200px] max-w-xs flex-shrink-0">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 
-                  group-focus-within:text-gray-500 dark:group-focus-within:text-gray-400 
+                  group-focus-within:text-blue-500 dark:group-focus-within:text-blue-400 
                   transition-colors duration-200 pointer-events-none"
                 size={16}
               />
@@ -235,11 +244,12 @@ const DataTable = ({
                 type="text"
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Search all columns..."
+                placeholder={searchPlaceholder}
                 className="w-full pl-9 pr-8 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 
                   dark:border-gray-600 text-gray-900 dark:text-gray-100 placeholder-gray-400 
                   dark:placeholder-gray-500 rounded-lg focus:outline-none focus:bg-white 
-                  dark:focus:bg-gray-700 focus:border-gray-400 dark:focus:border-gray-500 
+                  dark:focus:bg-gray-700 focus:border-blue-400 dark:focus:border-blue-500 
+                  focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20
                   transition-all duration-200 text-sm"
                 aria-label="Search table"
               />
@@ -255,10 +265,16 @@ const DataTable = ({
               )}
             </div>
           )}
+          {/* Inline Filters */}
+          {filters && (
+            <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+              {filters}
+            </div>
+          )}
 
-          {/* Selection Info */}
+          {/* Selection Info — pushed right */}
           {enableRowSelection && Object.keys(rowSelection).length > 0 && (
-            <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
+            <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium ml-auto">
               <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-100 dark:bg-blue-900/40 rounded-full text-xs">
                 {table.getSelectedRowModel().rows.length}
               </span>

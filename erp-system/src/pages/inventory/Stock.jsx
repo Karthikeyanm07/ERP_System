@@ -244,71 +244,40 @@ const Stock = () => {
         />
       </div>
 
-      {/* Filters */}
-      <Card padding={false} className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Filter size={18} className="text-gray-500" />
-            <span className="font-medium text-gray-700">Filters</span>
-          </div>
-          <button
-            onClick={clearFilters}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Clear All
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Search */}
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500"
-              size={20}
-            />
-            <input
-              type="text"
-              placeholder="Search by product name or code..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            />
-          </div>
-
-          {/* Warehouse Filter */}
-          <select
-            value={warehouseFilter}
-            onChange={(e) => setWarehouseFilter(e.target.value)}
-            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
-          >
-            <option value="ALL">All Warehouses</option>
-            {warehouses.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Low Stock Toggle */}
-          <button
-            onClick={() => setShowLowStock(!showLowStock)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-              showLowStock
-                ? "bg-yellow-50 border-yellow-300 text-yellow-700"
-                : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <AlertTriangle size={18} />
-            {showLowStock ? "Showing Low Stock Only" : "Show Low Stock Only"}
-          </button>
-        </div>
-      </Card>
-
       {/* Stock Table */}
       <DataTable
         columns={columns}
         data={displayData}
         loading={loading}
-        emptyMessage="No stock data available"
+        emptyMessage="No stock records found"
+        searchPlaceholder="Search by product name or code..."
+        filters={
+          <>
+            <select
+              value={warehouseFilter}
+              onChange={(e) => setWarehouseFilter(e.target.value)}
+              className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm cursor-pointer focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
+            >
+              <option value="ALL">All Warehouses</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowLowStock(!showLowStock)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-all duration-200 ${
+                showLowStock
+                  ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400"
+                  : "bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              }`}
+            >
+              <AlertTriangle size={16} />
+              {showLowStock ? "Low Stock" : "Low Stock"}
+            </button>
+          </>
+        }
         enableRowSelection
       />
     </div>

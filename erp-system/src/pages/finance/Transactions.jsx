@@ -394,52 +394,6 @@ const Transactions = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <Card padding={false} className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Filter size={18} className="text-gray-500 dark:text-gray-400" />
-            <span className="font-medium text-gray-700 dark:text-gray-300">
-              Filters
-            </span>
-          </div>
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            Clear All
-          </Button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Type Filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:border-gray-500 dark:focus:border-gray-400 transition-all duration-200 text-sm cursor-pointer"
-          >
-            <option value="ALL">All Transactions</option>
-            <option value="INCOME">Income Only</option>
-            <option value="EXPENSE">Expenses Only</option>
-          </select>
-
-          {/* Date Range */}
-          <div className="flex items-center gap-2">
-            <Calendar size={18} className="text-gray-400 dark:text-gray-500" />
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-              placeholder="Start Date"
-            />
-          </div>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-            placeholder="End Date"
-          />
-        </div>
-      </Card>
-
       {/* Table */}
       <DataTable
         columns={columns}
@@ -447,6 +401,35 @@ const Transactions = () => {
         loading={loading}
         emptyMessage="No transactions found"
         enableRowSelection
+        searchPlaceholder="Search transactions..."
+        filters={
+          <>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm cursor-pointer focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
+            >
+              <option value="ALL">All Transactions</option>
+              <option value="INCOME">Income Only</option>
+              <option value="EXPENSE">Expenses Only</option>
+            </select>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200"
+              />
+              <span className="text-gray-400 dark:text-gray-500 text-xs">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200"
+              />
+            </div>
+          </>
+        }
         actions={
           canDeleteTransactions
             ? (row) => (

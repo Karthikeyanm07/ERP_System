@@ -310,25 +310,21 @@ const Attendance = () => {
         </Card>
       </div>
 
-      {/* Filter */}
-      <Card padding={false} className="p-4">
-        <div className="flex items-center gap-4">
-          <Filter size={20} className="text-gray-400" />
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </Card>
-
       {/* Table */}
       <DataTable
         columns={columns}
         data={attendance}
         loading={loading}
         emptyMessage="No attendance records for this date"
+        searchPlaceholder="Search attendance..."
+        filters={
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200"
+          />
+        }
       />
 
       {/* Modal */}
