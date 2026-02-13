@@ -7,6 +7,8 @@ import com.erp.enterprise.exception.*;
 import com.erp.enterprise.repository.hr.UserRepository;
 import com.erp.enterprise.repository.inventory.*;
 import com.erp.enterprise.service.inventory.*;
+import com.erp.enterprise.service.common.SequenceGeneratorService;
+import com.erp.enterprise.service.finance.TransactionService;
 import com.erp.enterprise.util.DtoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
  * - Status flow: PENDING → APPROVED → RECEIVED
  * - Updates stock when order is received
  * - Creates stock movements for audit trail
+ * - Auto-creates finance transaction when PO is received
  */
 @Service
 @Transactional
@@ -36,6 +39,8 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
     private final UserRepository userRepository;
     private final StockService stockService;
     private final StockMovementService stockMovementService;
+    private final TransactionService transactionService;
+    private final SequenceGeneratorService sequenceGenerator;
 
     @Autowired
     public PurchaseOrderServiceImpl(PurchaseOrderRepository purchaseOrderRepository,
@@ -44,7 +49,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                                     ProductRepository productRepository,
                                     UserRepository userRepository,
                                     StockService stockService,
-                                    StockMovementService stockMovementService) {
+                                    StockMovementService stockMovementService,
+                                    TransactionService transactionService,
+                                    SequenceGeneratorService sequenceGenerator) {
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.supplierRepository = supplierRepository;
         this.warehouseRepository = warehouseRepository;
@@ -52,13 +59,19 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         this.userRepository = userRepository;
         this.stockService = stockService;
         this.stockMovementService = stockMovementService;
+        this.transactionService = transactionService;
+        this.sequenceGenerator = sequenceGenerator;
     }
 
     @Override
     public PurchaseOrderDTO createPurchaseOrder(PurchaseOrderCreateRequest request) {
-        // Check if PO number exists
-        if (purchaseOrderRepository.existsByPoNumber(request.getPoNumber())) {
-            throw new DuplicateResourceException("PurchaseOrder", "poNumber", request.getPoNumber());
+        // Auto-generate PO number if blank
+        String poNumber = request.getPoNumber();
+        if (poNumber == null || poNumber.isBlank()) {
+            poNumber = sequenceGenerator.nextPurchaseOrderNumber();
+        }
+        if (purchaseOrderRepository.existsByPoNumber(poNumber)) {
+            throw new DuplicateResourceException("PurchaseOrder", "poNumber", poNumber);
         }
 
         // Validate supplier
@@ -71,10 +84,11 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Warehouse", "id", request.getWarehouseId()));
 
-        // Validate user
-        User user = userRepository.findById(request.getCreatedById())
+        // Validate user — default to user 1 if not provided
+        Long userId = request.getCreatedById() != null ? request.getCreatedById() : 1L;
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "User", "id", request.getCreatedById()));
+                        "User", "id", userId));
 
         // Validate items
         if (request.getItems() == null || request.getItems().isEmpty()) {
@@ -85,7 +99,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
 
         // Create purchase order
         PurchaseOrder purchaseOrder = new PurchaseOrder();
-        purchaseOrder.setPoNumber(request.getPoNumber());
+        purchaseOrder.setPoNumber(poNumber);
         purchaseOrder.setSupplier(supplier);
         purchaseOrder.setWarehouse(warehouse);
         purchaseOrder.setOrderDate(request.getOrderDate());
@@ -245,6 +259,9 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         // Update PO status
         purchaseOrder.setStatus("RECEIVED");
         PurchaseOrder updated = purchaseOrderRepository.save(purchaseOrder);
+
+        // Phase 3: Auto-create finance transaction for purchase
+        transactionService.autoCreatePurchaseTransaction(updated);
 
         return DtoMapper.toPurchaseOrderDTO(updated);
     }

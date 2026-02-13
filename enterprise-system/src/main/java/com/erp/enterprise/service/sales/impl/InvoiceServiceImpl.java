@@ -9,7 +9,10 @@ import com.erp.enterprise.exception.ResourceNotFoundException;
 import com.erp.enterprise.repository.sales.*;
 import com.erp.enterprise.service.sales.CustomerService;
 import com.erp.enterprise.service.sales.InvoiceService;
+import com.erp.enterprise.service.common.SequenceGeneratorService;
 import com.erp.enterprise.util.DtoMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,28 +30,34 @@ import java.util.stream.Collectors;
  * - Tracks payment status (UNPAID, PARTIAL, PAID, OVERDUE)
  * - Updates customer outstanding balance
  * - Links to sales orders
+ * - Auto-generates invoice when sales order is delivered
  */
 @Service
 @Transactional
 public class InvoiceServiceImpl implements InvoiceService {
+
+    private static final Logger logger = LoggerFactory.getLogger(InvoiceServiceImpl.class);
 
     private final InvoiceRepository invoiceRepository;
     private final CustomerRepository customerRepository;
     private final SalesOrderRepository salesOrderRepository;
     private final PaymentRepository paymentRepository;
     private final CustomerService customerService;
+    private final SequenceGeneratorService sequenceGenerator;
 
     @Autowired
     public InvoiceServiceImpl(InvoiceRepository invoiceRepository,
                               CustomerRepository customerRepository,
                               SalesOrderRepository salesOrderRepository,
                               PaymentRepository paymentRepository,
-                              CustomerService customerService) {
+                              CustomerService customerService,
+                              SequenceGeneratorService sequenceGenerator) {
         this.invoiceRepository = invoiceRepository;
         this.customerRepository = customerRepository;
         this.salesOrderRepository = salesOrderRepository;
         this.paymentRepository = paymentRepository;
         this.customerService = customerService;
+        this.sequenceGenerator = sequenceGenerator;
     }
 
     @Override
@@ -286,6 +295,53 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         // Update customer balance
         customerService.updateOutstandingBalance(invoice.getCustomer().getId());
+    }
+
+    @Override
+    public InvoiceDTO autoCreateInvoiceForDeliveredOrder(SalesOrder salesOrder) {
+        /**
+         * Auto-Invoice Generation (Phase 1)
+         *
+         * Called automatically when a Sales Order is DELIVERED.
+         * - Generates sequential invoice number (INV-YYYY-NNN)
+         * - Copies all amounts from sales order
+         * - Sets due date to 30 days from today
+         * - Skips if invoice already exists for this SO
+         */
+
+        // Skip if invoice already exists for this sales order
+        if (invoiceRepository.findBySalesOrderId(salesOrder.getId()).isPresent()) {
+            logger.info("Invoice already exists for Sales Order {}, skipping auto-creation",
+                    salesOrder.getOrderNumber());
+            return null;
+        }
+
+        // Generate auto-sequential invoice number
+        String invoiceNumber = sequenceGenerator.nextInvoiceNumber();
+
+        // Create invoice from sales order
+        Invoice invoice = new Invoice();
+        invoice.setInvoiceNumber(invoiceNumber);
+        invoice.setSalesOrder(salesOrder);
+        invoice.setCustomer(salesOrder.getCustomer());
+        invoice.setInvoiceDate(LocalDate.now());
+        invoice.setDueDate(LocalDate.now().plusDays(30));
+        invoice.setSubtotal(salesOrder.getSubtotal());
+        invoice.setTaxAmount(salesOrder.getTaxAmount());
+        invoice.setDiscountAmount(salesOrder.getDiscountAmount());
+        invoice.setTotalAmount(salesOrder.getTotalAmount());
+        invoice.setPaidAmount(BigDecimal.ZERO);
+        invoice.setStatus("UNPAID");
+
+        Invoice savedInvoice = invoiceRepository.save(invoice);
+
+        // Update customer outstanding balance
+        customerService.updateOutstandingBalance(salesOrder.getCustomer().getId());
+
+        logger.info("Auto-generated Invoice {} for Sales Order {} - Amount: {}",
+                invoiceNumber, salesOrder.getOrderNumber(), salesOrder.getTotalAmount());
+
+        return DtoMapper.toInvoiceDTO(savedInvoice);
     }
 
     private boolean isValidInvoiceStatus(String status) {

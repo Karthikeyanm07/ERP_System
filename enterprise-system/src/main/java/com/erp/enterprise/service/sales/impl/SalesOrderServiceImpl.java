@@ -11,6 +11,7 @@ import com.erp.enterprise.exception.*;
 import com.erp.enterprise.repository.hr.UserRepository;
 import com.erp.enterprise.repository.inventory.*;
 import com.erp.enterprise.repository.sales.*;
+import com.erp.enterprise.service.common.SequenceGeneratorService;
 import com.erp.enterprise.service.inventory.StockMovementService;
 import com.erp.enterprise.service.inventory.StockService;
 import com.erp.enterprise.service.sales.*;
@@ -47,6 +48,8 @@ public class SalesOrderServiceImpl implements SalesOrderService {
     private final StockRepository stockRepository;
     private final StockService stockService;
     private final StockMovementService stockMovementService;
+    private final InvoiceService invoiceService;
+    private final SequenceGeneratorService sequenceGenerator;
 
     @Autowired
     public SalesOrderServiceImpl(SalesOrderRepository salesOrderRepository,
@@ -56,7 +59,9 @@ public class SalesOrderServiceImpl implements SalesOrderService {
                                  UserRepository userRepository,
                                  StockRepository stockRepository,
                                  StockService stockService,
-                                 StockMovementService stockMovementService) {
+                                 StockMovementService stockMovementService,
+                                 InvoiceService invoiceService,
+                                 SequenceGeneratorService sequenceGenerator) {
         this.salesOrderRepository = salesOrderRepository;
         this.customerRepository = customerRepository;
         this.warehouseRepository = warehouseRepository;
@@ -65,6 +70,8 @@ public class SalesOrderServiceImpl implements SalesOrderService {
         this.stockRepository = stockRepository;
         this.stockService = stockService;
         this.stockMovementService = stockMovementService;
+        this.invoiceService = invoiceService;
+        this.sequenceGenerator = sequenceGenerator;
     }
 
     @Override
@@ -78,10 +85,14 @@ public class SalesOrderServiceImpl implements SalesOrderService {
          * 5. Create order in PENDING status
          */
 
-        // Check duplicate order number
-        if (salesOrderRepository.existsByOrderNumber(request.getOrderNumber())) {
+        // Auto-generate order number if blank
+        String orderNumber = request.getOrderNumber();
+        if (orderNumber == null || orderNumber.isBlank()) {
+            orderNumber = sequenceGenerator.nextSalesOrderNumber();
+        }
+        if (salesOrderRepository.existsByOrderNumber(orderNumber)) {
             throw new DuplicateResourceException(
-                    "SalesOrder", "orderNumber", request.getOrderNumber());
+                    "SalesOrder", "orderNumber", orderNumber);
         }
 
         // Validate customer
@@ -94,10 +105,11 @@ public class SalesOrderServiceImpl implements SalesOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Warehouse", "id", request.getWarehouseId()));
 
-        // Validate user
-        User user = userRepository.findById(request.getCreatedById())
+        // Validate user — default to user 1 if not provided
+        Long userId = request.getCreatedById() != null ? request.getCreatedById() : 1L;
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "User", "id", request.getCreatedById()));
+                        "User", "id", userId));
 
         // Validate items
         if (request.getItems() == null || request.getItems().isEmpty()) {
@@ -106,7 +118,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
         // Create sales order
         SalesOrder salesOrder = new SalesOrder();
-        salesOrder.setOrderNumber(request.getOrderNumber());
+        salesOrder.setOrderNumber(orderNumber);
         salesOrder.setCustomer(customer);
         salesOrder.setWarehouse(warehouse);
         salesOrder.setOrderDate(request.getOrderDate());
@@ -115,6 +127,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
         salesOrder.setDiscountAmount(request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO);
         salesOrder.setStatus("PENDING");
         salesOrder.setCreatedBy(user);
+        salesOrder.setNotes(request.getNotes());
 
         // Create items and validate stock
         for (SalesOrderItemDTO itemDTO : request.getItems()) {
@@ -306,7 +319,7 @@ public class SalesOrderServiceImpl implements SalesOrderService {
          * Business Logic:
          * - Changes status from SHIPPED to DELIVERED
          * - Indicates customer received the order
-         * - Final status in the order lifecycle
+         * - AUTO: Generates invoice for the delivered order
          */
 
         SalesOrder salesOrder = salesOrderRepository.findById(id)
@@ -320,6 +333,9 @@ public class SalesOrderServiceImpl implements SalesOrderService {
 
         salesOrder.setStatus("DELIVERED");
         SalesOrder updated = salesOrderRepository.save(salesOrder);
+
+        // Phase 1: Auto-generate invoice on delivery
+        invoiceService.autoCreateInvoiceForDeliveredOrder(updated);
 
         return DtoMapper.toSalesOrderDTO(updated);
     }

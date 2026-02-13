@@ -13,6 +13,8 @@ import com.erp.enterprise.repository.sales.InvoiceRepository;
 import com.erp.enterprise.repository.sales.PaymentRepository;
 import com.erp.enterprise.service.sales.InvoiceService;
 import com.erp.enterprise.service.sales.PaymentService;
+import com.erp.enterprise.service.common.SequenceGeneratorService;
+import com.erp.enterprise.service.finance.TransactionService;
 import com.erp.enterprise.util.DtoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
  * - Updates invoice status after payment
  * - Multiple payments can be made against one invoice
  * - Updates customer outstanding balance
+ * - Auto-creates finance transaction on payment
  */
 @Service
 @Transactional
@@ -42,16 +45,22 @@ public class PaymentServiceImpl implements PaymentService {
     private final InvoiceRepository invoiceRepository;
     private final UserRepository userRepository;
     private final InvoiceService invoiceService;
+    private final TransactionService transactionService;
+    private final SequenceGeneratorService sequenceGenerator;
 
     @Autowired
     public PaymentServiceImpl(PaymentRepository paymentRepository,
                               InvoiceRepository invoiceRepository,
                               UserRepository userRepository,
-                              InvoiceService invoiceService) {
+                              InvoiceService invoiceService,
+                              TransactionService transactionService,
+                              SequenceGeneratorService sequenceGenerator) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
         this.userRepository = userRepository;
         this.invoiceService = invoiceService;
+        this.transactionService = transactionService;
+        this.sequenceGenerator = sequenceGenerator;
     }
 
     @Override
@@ -64,12 +73,17 @@ public class PaymentServiceImpl implements PaymentService {
          * 4. Create payment record
          * 5. Update invoice paid amount and status
          * 6. Update customer outstanding balance
+         * 7. AUTO: Create finance transaction (debit cash, credit revenue)
          */
 
-        // Check duplicate payment number
-        if (paymentRepository.existsByPaymentNumber(request.getPaymentNumber())) {
+        // Auto-generate payment number if blank
+        String paymentNumber = request.getPaymentNumber();
+        if (paymentNumber == null || paymentNumber.isBlank()) {
+            paymentNumber = sequenceGenerator.nextPaymentNumber();
+        }
+        if (paymentRepository.existsByPaymentNumber(paymentNumber)) {
             throw new DuplicateResourceException(
-                    "Payment", "paymentNumber", request.getPaymentNumber());
+                    "Payment", "paymentNumber", paymentNumber);
         }
 
         // Validate invoice
@@ -77,10 +91,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Invoice", "id", request.getInvoiceId()));
 
-        // Validate user
-        User user = userRepository.findById(request.getCreatedById())
+        // Validate user — default to user 1 if not provided
+        Long userId = request.getCreatedById() != null ? request.getCreatedById() : 1L;
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "User", "id", request.getCreatedById()));
+                        "User", "id", userId));
 
         // Business Logic: Validate payment amount
         BigDecimal remainingAmount = invoice.getRemainingAmount();
@@ -102,7 +117,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Create payment
         Payment payment = new Payment();
-        payment.setPaymentNumber(request.getPaymentNumber());
+        payment.setPaymentNumber(paymentNumber);
         payment.setInvoice(invoice);
         payment.setPaymentDate(request.getPaymentDate());
         payment.setAmount(request.getAmount());
@@ -115,6 +130,9 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Update invoice after payment
         invoiceService.updateInvoiceAfterPayment(invoice.getId());
+
+        // Phase 2: Auto-create finance transaction
+        transactionService.autoCreatePaymentTransaction(savedPayment, invoice);
 
         return DtoMapper.toPaymentDTO(savedPayment);
     }

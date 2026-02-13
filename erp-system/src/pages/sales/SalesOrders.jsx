@@ -200,16 +200,18 @@ const SalesOrders = () => {
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
-    orderNumber: "",
     customerId: "",
+    warehouseId: "",
     orderDate: new Date().toISOString().split("T")[0],
     deliveryDate: "",
+    notes: "",
     items: [{ productId: "", quantity: 1, unitPrice: "" }],
   });
 
@@ -217,6 +219,7 @@ const SalesOrders = () => {
     fetchOrders();
     fetchCustomers();
     fetchProducts();
+    fetchWarehouses();
   }, []);
 
   const fetchOrders = async () => {
@@ -245,6 +248,15 @@ const SalesOrders = () => {
       setProducts(Array.isArray(data) ? data : []);
     } catch (error) {
       setProducts([]);
+    }
+  };
+
+  const fetchWarehouses = async () => {
+    try {
+      const data = await execute(inventoryApi.getWarehouses);
+      setWarehouses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setWarehouses([]);
     }
   };
 
@@ -291,10 +303,11 @@ const SalesOrders = () => {
 
   const resetForm = () => {
     setFormData({
-      orderNumber: "",
       customerId: "",
+      warehouseId: "",
       orderDate: new Date().toISOString().split("T")[0],
       deliveryDate: "",
+      notes: "",
       items: [{ productId: "", quantity: 1, unitPrice: "" }],
     });
     setErrors({});
@@ -303,11 +316,11 @@ const SalesOrders = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.orderNumber.trim()) {
-      newErrors.orderNumber = "Order number is required";
-    }
     if (!formData.customerId) {
       newErrors.customerId = "Customer is required";
+    }
+    if (!formData.warehouseId) {
+      newErrors.warehouseId = "Warehouse is required";
     }
     if (!formData.orderDate) {
       newErrors.orderDate = "Order date is required";
@@ -335,12 +348,11 @@ const SalesOrders = () => {
     setFormLoading(true);
 
     const submitData = {
-      orderNumber: formData.orderNumber,
       customerId: parseInt(formData.customerId),
-      warehouseId: 1, // Default warehouse
+      warehouseId: parseInt(formData.warehouseId),
       orderDate: formData.orderDate,
       deliveryDate: formData.deliveryDate || null,
-      createdById: 1, // Default user
+      notes: formData.notes || null,
       items: formData.items
         .filter((item) => item.productId && item.quantity > 0)
         .map((item) => ({
@@ -560,14 +572,6 @@ const SalesOrders = () => {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Order Number *"
-              name="orderNumber"
-              value={formData.orderNumber}
-              onChange={handleChange}
-              placeholder="SO-001"
-              error={errors.orderNumber}
-            />
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Customer *
@@ -591,6 +595,29 @@ const SalesOrders = () => {
                 <p className="text-red-500 text-xs mt-1">{errors.customerId}</p>
               )}
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Warehouse *
+              </label>
+              <select
+                name="warehouseId"
+                value={formData.warehouseId}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 ${
+                  errors.warehouseId ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">Select Warehouse</option>
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({w.location})
+                  </option>
+                ))}
+              </select>
+              {errors.warehouseId && (
+                <p className="text-red-500 text-xs mt-1">{errors.warehouseId}</p>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -608,6 +635,21 @@ const SalesOrders = () => {
               type="date"
               value={formData.deliveryDate}
               onChange={handleChange}
+            />
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Notes
+            </label>
+            <textarea
+              name="notes"
+              value={formData.notes}
+              onChange={handleChange}
+              rows={2}
+              placeholder="Internal notes or remarks..."
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm"
             />
           </div>
 

@@ -9,6 +9,7 @@ import com.erp.enterprise.exception.DuplicateResourceException;
 import com.erp.enterprise.exception.ResourceNotFoundException;
 import com.erp.enterprise.repository.hr.EmployeeRepository;
 import com.erp.enterprise.repository.finanace.ExpenseRepository;
+import com.erp.enterprise.service.common.SequenceGeneratorService;
 import com.erp.enterprise.service.finance.ExpenseService;
 import com.erp.enterprise.util.DtoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,25 +35,32 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseRepository expenseRepository;
     private final EmployeeRepository employeeRepository;
+    private final SequenceGeneratorService sequenceGenerator;
 
     @Autowired
     public ExpenseServiceImpl(ExpenseRepository expenseRepository,
-                              EmployeeRepository employeeRepository) {
+                              EmployeeRepository employeeRepository,
+                              SequenceGeneratorService sequenceGenerator) {
         this.expenseRepository = expenseRepository;
         this.employeeRepository = employeeRepository;
+        this.sequenceGenerator = sequenceGenerator;
     }
 
     @Override
     public ExpenseDTO createExpense(ExpenseCreateRequest request) {
-        // Business Logic: Check if expense code exists
-        if (expenseRepository.existsByExpenseCode(request.getExpenseCode())) {
+        // Auto-generate expense code if blank
+        String expenseCode = request.getExpenseCode();
+        if (expenseCode == null || expenseCode.isBlank()) {
+            expenseCode = sequenceGenerator.nextExpenseCode();
+        }
+        if (expenseRepository.existsByExpenseCode(expenseCode)) {
             throw new DuplicateResourceException(
-                    "Expense", "expenseCode", request.getExpenseCode());
+                    "Expense", "expenseCode", expenseCode);
         }
 
         // Create expense
         Expense expense = new Expense();
-        expense.setExpenseCode(request.getExpenseCode());
+        expense.setExpenseCode(expenseCode);
         expense.setCategory(request.getCategory());
         expense.setAmount(request.getAmount());
         expense.setExpenseDate(request.getExpenseDate());

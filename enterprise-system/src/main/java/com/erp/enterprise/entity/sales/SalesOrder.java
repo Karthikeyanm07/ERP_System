@@ -86,6 +86,9 @@ public class SalesOrder extends BaseEntity {
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private User createdBy;
 
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+
     // One sales order has multiple items
     @OneToMany(mappedBy = "salesOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SalesOrderItem> items = new ArrayList<>();

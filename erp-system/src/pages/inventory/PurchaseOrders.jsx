@@ -229,20 +229,23 @@ const PurchaseOrders = () => {
 
   const [orders, setOrders] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
     supplierId: "",
-    items: "",
-    totalAmount: "",
-    expectedDate: "",
-    notes: "",
+    warehouseId: "",
+    orderDate: new Date().toISOString().split("T")[0],
+    expectedDeliveryDate: "",
+    items: [{ productId: "", quantity: 1, unitPrice: "" }],
   });
 
   // Confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
-    type: null, // 'cancel' or 'delete'
+    type: null,
     orderId: null,
     title: "",
     message: "",
@@ -257,6 +260,8 @@ const PurchaseOrders = () => {
   useEffect(() => {
     fetchOrders();
     fetchSuppliers();
+    fetchProducts();
+    fetchWarehouses();
   }, []);
 
   const fetchOrders = async () => {
@@ -277,6 +282,24 @@ const PurchaseOrders = () => {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const data = await execute(inventoryApi.getProducts);
+      setProducts(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setProducts([]);
+    }
+  };
+
+  const fetchWarehouses = async () => {
+    try {
+      const data = await execute(inventoryApi.getWarehouses);
+      setWarehouses(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setWarehouses([]);
+    }
+  };
+
   // Clear all filters
   const clearFilters = () => {
     setSearchTerm("");
@@ -285,9 +308,8 @@ const PurchaseOrders = () => {
     setDateRange({ startDate: "", endDate: "" });
   };
 
-  // Client-side combined filtering - allows combining multiple filters
+  // Client-side combined filtering
   const filteredOrders = orders.filter((order) => {
-    // Search filter (PO number, supplier name)
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       const poMatch = (order.poNumber || "").toLowerCase().includes(search);
@@ -296,30 +318,19 @@ const PurchaseOrders = () => {
         .includes(search);
       if (!poMatch && !supplierMatch) return false;
     }
-
-    // Status filter
-    if (statusFilter !== "ALL" && order.status !== statusFilter) {
-      return false;
-    }
-
-    // Supplier filter
+    if (statusFilter !== "ALL" && order.status !== statusFilter) return false;
     if (
       supplierFilter !== "ALL" &&
       order.supplierId !== parseInt(supplierFilter)
     ) {
       return false;
     }
-
-    // Date range filter
     if (dateRange.startDate && dateRange.endDate) {
       const orderDate = new Date(order.orderDate);
       const start = new Date(dateRange.startDate);
       const end = new Date(dateRange.endDate);
-      if (orderDate < start || orderDate > end) {
-        return false;
-      }
+      if (orderDate < start || orderDate > end) return false;
     }
-
     return true;
   });
 
@@ -328,21 +339,73 @@ const PurchaseOrders = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleItemChange = (index, field, value) => {
+    const updatedItems = [...formData.items];
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    setFormData((prev) => ({ ...prev, items: updatedItems }));
+  };
+
+  const addItem = () => {
+    setFormData((prev) => ({
+      ...prev,
+      items: [...prev.items, { productId: "", quantity: 1, unitPrice: "" }],
+    }));
+  };
+
+  const removeItem = (index) => {
+    if (formData.items.length <= 1) return;
+    const updatedItems = formData.items.filter((_, i) => i !== index);
+    setFormData((prev) => ({ ...prev, items: updatedItems }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      supplierId: "",
+      warehouseId: "",
+      orderDate: new Date().toISOString().split("T")[0],
+      expectedDeliveryDate: "",
+      items: [{ productId: "", quantity: 1, unitPrice: "" }],
+    });
+    setErrors({});
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.supplierId) newErrors.supplierId = "Supplier is required";
+    if (!formData.warehouseId) newErrors.warehouseId = "Warehouse is required";
+    if (!formData.orderDate) newErrors.orderDate = "Order date is required";
+    const hasValidItems = formData.items.some(
+      (item) => item.productId && item.quantity > 0
+    );
+    if (!hasValidItems) newErrors.items = "At least one item is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (!validateForm()) return;
     setFormLoading(true);
 
+    const submitData = {
+      supplierId: parseInt(formData.supplierId),
+      warehouseId: parseInt(formData.warehouseId),
+      orderDate: formData.orderDate,
+      expectedDeliveryDate: formData.expectedDeliveryDate || null,
+      items: formData.items
+        .filter((item) => item.productId && item.quantity > 0)
+        .map((item) => ({
+          productId: parseInt(item.productId),
+          quantity: parseInt(item.quantity),
+          unitPrice: parseFloat(item.unitPrice) || 0,
+        })),
+    };
+
     try {
-      await execute(inventoryApi.createPurchaseOrder, formData);
+      await execute(inventoryApi.createPurchaseOrder, submitData);
       await fetchOrders();
       setIsModalOpen(false);
-      setFormData({
-        supplierId: "",
-        items: "",
-        totalAmount: "",
-        expectedDate: "",
-        notes: "",
-      });
+      resetForm();
     } catch (error) {
       logger.error("Error creating order:", error);
     } finally {
@@ -574,6 +637,7 @@ const PurchaseOrders = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Create Purchase Order"
+        size="lg"
         footer={
           <>
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>
@@ -586,54 +650,138 @@ const PurchaseOrders = () => {
         }
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Supplier
-            </label>
-            <select
-              name="supplierId"
-              value={formData.supplierId}
-              onChange={handleChange}
-              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-              required
-            >
-              <option value="">Select Supplier</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Supplier *
+              </label>
+              <select
+                name="supplierId"
+                value={formData.supplierId}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 ${
+                  errors.supplierId ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">Select Supplier</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              {errors.supplierId && (
+                <p className="text-red-500 text-xs mt-1">{errors.supplierId}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Warehouse *
+              </label>
+              <select
+                name="warehouseId"
+                value={formData.warehouseId}
+                onChange={handleChange}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-600 ${
+                  errors.warehouseId ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">Select Warehouse</option>
+                {warehouses.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} ({w.location})
+                  </option>
+                ))}
+              </select>
+              {errors.warehouseId && (
+                <p className="text-red-500 text-xs mt-1">{errors.warehouseId}</p>
+              )}
+            </div>
           </div>
+
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Total Amount"
-              name="totalAmount"
-              type="number"
-              value={formData.totalAmount}
+              label="Order Date *"
+              name="orderDate"
+              type="date"
+              value={formData.orderDate}
               onChange={handleChange}
-              required
+              error={errors.orderDate}
             />
             <Input
-              label="Expected Date"
-              name="expectedDate"
+              label="Expected Delivery Date"
+              name="expectedDeliveryDate"
               type="date"
-              value={formData.expectedDate}
+              value={formData.expectedDeliveryDate}
               onChange={handleChange}
             />
           </div>
+
+          {/* Order Items */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Order details, items, etc."
-            />
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Order Items *
+              </label>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={addItem}
+              >
+                <Plus size={16} /> Add Item
+              </Button>
+            </div>
+            {errors.items && (
+              <p className="text-red-500 text-xs mb-2">{errors.items}</p>
+            )}
+            <div className="space-y-2">
+              {formData.items.map((item, index) => (
+                <div key={index} className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <select
+                      value={item.productId}
+                      onChange={(e) =>
+                        handleItemChange(index, "productId", e.target.value)
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                    >
+                      <option value="">Select Product</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <input
+                    type="number"
+                    placeholder="Qty"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      handleItemChange(index, "quantity", e.target.value)
+                    }
+                    className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price"
+                    value={item.unitPrice}
+                    onChange={(e) =>
+                      handleItemChange(index, "unitPrice", e.target.value)
+                    }
+                    className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeItem(index)}
+                    className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </form>
       </Modal>
