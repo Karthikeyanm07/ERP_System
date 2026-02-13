@@ -48,6 +48,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     List<Invoice> findByInvoiceDateBetweenOrderByInvoiceDateDesc(LocalDate startDate, LocalDate endDate);
 
     @EntityGraph(attributePaths = {"customer", "salesOrder"})
+    @Query("SELECT i FROM Invoice i WHERE i.dueDate < :currentDate AND i.status != 'PAID'")
     List<Invoice> findOverdueInvoices(@Param("currentDate") LocalDate currentDate);
 
     // Calculate total outstanding amount for customer
