@@ -172,6 +172,15 @@ const NAV_ITEMS = [
     path: "/sales/payments",
     keywords: ["pay", "collection", "receive"],
   },
+  // Legal
+  {
+    id: "privacy-policy",
+    name: "Privacy & Policy",
+    category: "Navigation",
+    icon: CreditCard,
+    path: "/privacy-policy",
+    keywords: ["privacy", "policy", "legal", "terms", "data"],
+  },
 ];
 
 /* ── Category colours ── */

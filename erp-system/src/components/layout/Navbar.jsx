@@ -8,7 +8,7 @@
  * - Sidebar toggle button (hamburger menu)
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useSidebar } from "../../context/SidebarContext";
@@ -22,6 +22,7 @@ import {
   Sun,
   Moon,
   Search,
+  Shield,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import CommandPalette from "../common/CommandPalette";
@@ -53,6 +54,18 @@ const Navbar = () => {
     logout();
     navigate("/login");
   };
+
+  // Global Ctrl+K listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setShowCommandPalette((prev) => !prev);
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <header className="h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6">
@@ -162,6 +175,17 @@ const Navbar = () => {
                 >
                   <Settings size={16} />
                   Settings
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowDropdown(false);
+                    navigate("/privacy-policy");
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Shield size={16} />
+                  Privacy & Policy
                 </button>
 
                 <hr className="my-1 border-gray-200 dark:border-gray-700" />

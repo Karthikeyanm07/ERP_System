@@ -197,9 +197,17 @@ const Login = () => {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
-          © 2025 ERP System. All rights reserved.
-        </p>
+        <div className="text-center mt-8 space-y-1">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            © {new Date().getFullYear()} ERP System. All rights reserved.
+          </p>
+          <Link
+            to="/privacy-policy"
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            Privacy & Policy
+          </Link>
+        </div>
       </div>
     </div>
   );

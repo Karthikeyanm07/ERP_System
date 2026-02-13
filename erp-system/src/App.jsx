@@ -60,6 +60,9 @@ import Payments from "./pages/sales/Payments";
 import Profile from "./pages/profile/Profile";
 import Settings from "./pages/settings/Settings";
 
+// Legal
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+
 /**
  * ProtectedRoute Component
  *
@@ -104,6 +107,7 @@ const AppRoutes = () => {
       {/* Public Routes - No authentication required */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
       {/* Protected Routes - Wrapped in Layout with Sidebar/Navbar */}
       <Route
