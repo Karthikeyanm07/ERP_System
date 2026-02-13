@@ -37,6 +37,13 @@ const Attendance = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Live clock
+  const [currentTime, setCurrentTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Form data matching AttendanceCreateRequest
   const [formData, setFormData] = useState({
     employeeId: "",
@@ -267,7 +274,7 @@ const Attendance = () => {
       {/* Quick Actions */}
       <Card title="Today's Attendance">
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2 text-gray-600">
+          <div className="flex items-center gap-2 text-gray-400">
             <Calendar size={20} />
             <span>
               {new Date().toLocaleDateString("en-US", {
@@ -278,9 +285,9 @@ const Attendance = () => {
               })}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-gray-600">
+          <div className="flex items-center gap-2 text-gray-400">
             <Clock size={20} />
-            <span>{new Date().toLocaleTimeString()}</span>
+            <span className="tabular-nums">{currentTime.toLocaleTimeString()}</span>
           </div>
           <div className="flex-1" />
           {canManageAttendance && (

@@ -450,24 +450,24 @@ const Employees = () => {
         const status = getValue() || "ACTIVE";
         const statusConfig = {
           ACTIVE: {
-            bg: "bg-green-100",
-            text: "text-green-700",
-            border: "border-green-300",
-            hoverBg: "hover:bg-green-200",
+            bg: "bg-green-100 dark:bg-green-900/30",
+            text: "text-green-700 dark:text-green-400",
+            border: "border-green-300 dark:border-green-700",
+            hoverBg: "hover:bg-green-200 dark:hover:bg-green-900/50",
             dot: "bg-green-500",
           },
           INACTIVE: {
-            bg: "bg-yellow-100",
-            text: "text-yellow-700",
-            border: "border-yellow-300",
-            hoverBg: "hover:bg-yellow-200",
+            bg: "bg-yellow-100 dark:bg-yellow-900/30",
+            text: "text-yellow-700 dark:text-yellow-400",
+            border: "border-yellow-300 dark:border-yellow-700",
+            hoverBg: "hover:bg-yellow-200 dark:hover:bg-yellow-900/50",
             dot: "bg-yellow-500",
           },
           TERMINATED: {
-            bg: "bg-red-100",
-            text: "text-red-700",
-            border: "border-red-300",
-            hoverBg: "hover:bg-red-200",
+            bg: "bg-red-100 dark:bg-red-900/30",
+            text: "text-red-700 dark:text-red-400",
+            border: "border-red-300 dark:border-red-700",
+            hoverBg: "hover:bg-red-200 dark:hover:bg-red-900/50",
             dot: "bg-red-500",
           },
         };

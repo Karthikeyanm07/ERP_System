@@ -21,8 +21,10 @@ import {
   PanelLeft,
   Sun,
   Moon,
+  Search,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
+import CommandPalette from "../common/CommandPalette";
 
 /**
  * Generate page title from current route
@@ -45,6 +47,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -69,6 +72,18 @@ const Navbar = () => {
           {getPageTitle(location.pathname)}
         </h2>
       </div>
+
+      {/* Center - Search trigger */}
+      <button
+        onClick={() => setShowCommandPalette(true)}
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200 cursor-pointer group"
+      >
+        <Search size={14} className="text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+        <span>Search...</span>
+        <kbd className="ml-3 inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-gray-400 dark:text-gray-500">
+          Ctrl K
+        </kbd>
+      </button>
 
       {/* Right side - Theme toggle, Notifications & User */}
       <div className="flex items-center gap-4">
@@ -163,6 +178,12 @@ const Navbar = () => {
           )}
         </div>
       </div>
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+      />
     </header>
   );
 };

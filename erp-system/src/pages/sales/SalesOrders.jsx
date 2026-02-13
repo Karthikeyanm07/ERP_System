@@ -42,43 +42,43 @@ const StatusDropdown = ({ currentStatus, onStatusChange, onDelete }) => {
 
   const statusConfig = {
     PENDING: {
-      bg: "bg-yellow-50",
-      text: "text-yellow-700",
-      border: "border-yellow-200",
+      bg: "bg-yellow-50 dark:bg-yellow-900/30",
+      text: "text-yellow-700 dark:text-yellow-400",
+      border: "border-yellow-200 dark:border-yellow-700",
       dot: "bg-yellow-500",
-      hoverBg: "hover:bg-yellow-100",
+      hoverBg: "hover:bg-yellow-100 dark:hover:bg-yellow-900/50",
       next: ["CONFIRM", "CANCEL"],
     },
     CONFIRMED: {
-      bg: "bg-blue-50",
-      text: "text-blue-700",
-      border: "border-blue-200",
+      bg: "bg-blue-50 dark:bg-blue-900/30",
+      text: "text-blue-700 dark:text-blue-400",
+      border: "border-blue-200 dark:border-blue-700",
       dot: "bg-blue-500",
-      hoverBg: "hover:bg-blue-100",
+      hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-900/50",
       next: ["SHIP", "CANCEL"],
     },
     SHIPPED: {
-      bg: "bg-indigo-50",
-      text: "text-indigo-700",
-      border: "border-indigo-200",
+      bg: "bg-indigo-50 dark:bg-indigo-900/30",
+      text: "text-indigo-700 dark:text-indigo-400",
+      border: "border-indigo-200 dark:border-indigo-700",
       dot: "bg-indigo-500",
-      hoverBg: "hover:bg-indigo-100",
+      hoverBg: "hover:bg-indigo-100 dark:hover:bg-indigo-900/50",
       next: ["DELIVER"],
     },
     DELIVERED: {
-      bg: "bg-green-50",
-      text: "text-green-700",
-      border: "border-green-200",
+      bg: "bg-green-50 dark:bg-green-900/30",
+      text: "text-green-700 dark:text-green-400",
+      border: "border-green-200 dark:border-green-700",
       dot: "bg-green-500",
-      hoverBg: "hover:bg-green-100",
+      hoverBg: "hover:bg-green-100 dark:hover:bg-green-900/50",
       next: [],
     },
     CANCELLED: {
-      bg: "bg-red-50",
-      text: "text-red-700",
-      border: "border-red-200",
+      bg: "bg-red-50 dark:bg-red-900/30",
+      text: "text-red-700 dark:text-red-400",
+      border: "border-red-200 dark:border-red-700",
       dot: "bg-red-500",
-      hoverBg: "hover:bg-red-100",
+      hoverBg: "hover:bg-red-100 dark:hover:bg-red-900/50",
       next: [],
     },
   };
@@ -100,10 +100,10 @@ const StatusDropdown = ({ currentStatus, onStatusChange, onDelete }) => {
     <>
       <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
       <div
-        className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px] z-50 overflow-hidden"
+        className="fixed bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 min-w-[140px] z-50 overflow-hidden"
         style={{ top: `${position.top}px`, left: `${position.left}px` }}
       >
-        <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-50">
+        <div className="px-3 py-1.5 text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-50 dark:border-gray-700">
           Available Actions
         </div>
 
@@ -116,7 +116,7 @@ const StatusDropdown = ({ currentStatus, onStatusChange, onDelete }) => {
                 onStatusChange(action);
                 setIsOpen(false);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors text-left"
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
             >
               {action === "CONFIRM" && (
                 <Check size={14} className="text-blue-500" />
@@ -134,7 +134,7 @@ const StatusDropdown = ({ currentStatus, onStatusChange, onDelete }) => {
             </button>
           ))
         ) : (
-          <div className="px-3 py-2 text-xs text-gray-400 italic">
+          <div className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500 italic">
             No further actions
           </div>
         )}
@@ -146,7 +146,7 @@ const StatusDropdown = ({ currentStatus, onStatusChange, onDelete }) => {
               onDelete();
               setIsOpen(false);
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 border-t border-gray-100 transition-colors text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 border-t border-gray-100 dark:border-gray-700 transition-colors text-left"
           >
             <Trash2 size={14} />
             Delete Order
