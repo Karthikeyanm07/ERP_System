@@ -23,7 +23,7 @@ import { logger } from "../../utils/logger";
 import { useAuth } from "../../hooks/useAuth";
 import { useApi } from "../../hooks/useApi";
 import { hrApi } from "../../api/hrApi";
-import { financeApi } from "../../api/financeApi";
+
 import { inventoryApi } from "../../api/inventoryApi";
 import { salesApi } from "../../api/salesApi";
 import StatsCard from "../../components/charts/StatsCard";
@@ -36,6 +36,7 @@ import {
   Clock,
   CheckCircle,
   IndianRupee,
+  Users,
 } from "lucide-react";
 
 const Dashboard = () => {
