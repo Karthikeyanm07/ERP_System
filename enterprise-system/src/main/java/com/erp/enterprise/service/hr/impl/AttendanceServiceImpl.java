@@ -44,19 +44,28 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public AttendanceDTO markAttendance(AttendanceCreateRequest request) {
+    @org.springframework.lang.NonNull
+    public AttendanceDTO markAttendance(@org.springframework.lang.NonNull AttendanceCreateRequest request) {
         // Business Logic: Validate employee exists
-        Employee employee = employeeRepository.findById(request.getEmployeeId())
+        Long employeeId = request.getEmployeeId();
+        if (employeeId == null) {
+             throw new BusinessException("Employee ID is required", "MISSING_EMPLOYEE_ID");
+        }
+        Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Employee", "id", request.getEmployeeId()));
+                        "Employee", "id", employeeId));
 
         // Business Logic: Check if attendance already marked for this date
+        LocalDate date = request.getDate();
+        if (date == null) {
+            throw new BusinessException("Date is required", "MISSING_DATE");
+        }
         if (attendanceRepository.existsByEmployeeIdAndDate(
-                request.getEmployeeId(), request.getDate())) {
+                employeeId, date)) {
             throw new DuplicateResourceException(
                     "Attendance",
                     "employee and date",
-                    employee.getFullName() + " on " + request.getDate());
+                    employee.getFullName() + " on " + date);
         }
 
         // Business Logic: Validate status
@@ -81,7 +90,8 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public AttendanceDTO getAttendanceById(Long id) {
+    @org.springframework.lang.NonNull
+    public AttendanceDTO getAttendanceById(@org.springframework.lang.NonNull Long id) {
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance", "id", id));
 
@@ -98,7 +108,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public List<AttendanceDTO> getAttendanceByEmployee(Long employeeId) {
+    public List<AttendanceDTO> getAttendanceByEmployee(@org.springframework.lang.NonNull Long employeeId) {
         // Validate employee exists
         if (!employeeRepository.existsById(employeeId)) {
             throw new ResourceNotFoundException("Employee", "id", employeeId);
@@ -113,7 +123,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public List<AttendanceDTO> getAttendanceByDate(LocalDate date) {
+    public List<AttendanceDTO> getAttendanceByDate(@org.springframework.lang.NonNull LocalDate date) {
         List<Attendance> attendanceList = attendanceRepository.findByDate(date);
 
         return attendanceList.stream()
@@ -123,7 +133,7 @@ public class AttendanceServiceImpl implements AttendanceService {
 
     @Override
     public List<AttendanceDTO> getAttendanceByEmployeeAndDateRange(
-            Long employeeId, LocalDate startDate, LocalDate endDate) {
+            @org.springframework.lang.NonNull Long employeeId, @org.springframework.lang.NonNull LocalDate startDate, @org.springframework.lang.NonNull LocalDate endDate) {
 
         // Validate employee exists
         if (!employeeRepository.existsById(employeeId)) {
@@ -147,7 +157,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public List<AttendanceDTO> getAttendanceByStatus(String status) {
+    public List<AttendanceDTO> getAttendanceByStatus(@org.springframework.lang.NonNull String status) {
         // Validate status
         if (!isValidAttendanceStatus(status)) {
             throw new BusinessException(
@@ -163,7 +173,8 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public AttendanceDTO updateAttendance(Long id, AttendanceDTO attendanceDTO) {
+    @org.springframework.lang.NonNull
+    public AttendanceDTO updateAttendance(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull AttendanceDTO attendanceDTO) {
         // Find existing attendance
         Attendance existingAttendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance", "id", id));
@@ -187,7 +198,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public void deleteAttendance(Long id) {
+    public void deleteAttendance(@org.springframework.lang.NonNull Long id) {
         // Check if attendance exists
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance", "id", id));
@@ -196,7 +207,8 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public AttendanceDTO clockIn(Long employeeId, LocalDate date) {
+    @org.springframework.lang.NonNull
+    public AttendanceDTO clockIn(@org.springframework.lang.NonNull Long employeeId, @org.springframework.lang.NonNull LocalDate date) {
         // Validate employee
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
@@ -220,7 +232,8 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     @Override
-    public AttendanceDTO clockOut(Long employeeId, LocalDate date) {
+    @org.springframework.lang.NonNull
+    public AttendanceDTO clockOut(@org.springframework.lang.NonNull Long employeeId, @org.springframework.lang.NonNull LocalDate date) {
         // Find attendance record
         Attendance attendance = attendanceRepository
                 .findByEmployeeIdAndDate(employeeId, date)

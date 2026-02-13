@@ -12,10 +12,9 @@
 
 import { useState, useEffect } from "react";
 import { logger } from "../../utils/logger";
-import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { financeApi } from "../../api/financeApi";
-import { useToast } from "../../components/common/Toast";
+import { useCrudForm } from "../../hooks/useCrudForm";
 import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
@@ -31,161 +30,87 @@ import {
   Trash2,
   Filter,
   RefreshCw,
+  Power,
+  PowerOff,
 } from "lucide-react";
 
 const Accounts = () => {
-  const { execute, loading } = useApi();
   const { hasAnyRole } = useAuth();
-  const toast = useToast();
 
   // Role-based permissions
   const canManageAccounts = hasAnyRole(["ROLE_ACCOUNTANT", "ROLE_ADMIN"]);
   const canDeleteAccounts = hasAnyRole(["ROLE_ADMIN"]);
 
-  const [accounts, setAccounts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingAccount, setEditingAccount] = useState(null);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [accountToDelete, setAccountToDelete] = useState(null);
-  const [formLoading, setFormLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
-  // Form data matching AccountDTO
-  const [formData, setFormData] = useState({
+  const initialData = {
     accountCode: "",
     accountName: "",
     accountType: "ASSET",
     parentAccountId: "",
     isActive: true,
+  };
+
+  const validate = (data) => {
+    const errors = {};
+    if (!data.accountCode?.trim()) errors.accountCode = "Account code is required";
+    if (!data.accountName?.trim()) errors.accountName = "Account name is required";
+    if (!data.accountType) errors.accountType = "Account type is required";
+    return errors;
+  };
+
+  const {
+    items: accounts,
+    formData,
+    errors,
+    loading,
+    formLoading,
+    isModalOpen,
+    setIsModalOpen,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    editingItem: editingAccount,
+    itemToDelete: accountToDelete,
+    fetchItems: fetchAccounts,
+    handleChange,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    confirmDelete,
+    handleSubmit: baseSubmit,
+  } = useCrudForm({
+    initialData,
+    validate,
+    api: financeApi,
+    entityName: "Account",
   });
 
   useEffect(() => {
     fetchAccounts();
   }, []);
 
-  const fetchAccounts = async () => {
-    try {
-      const data = await execute(financeApi.getAccounts);
-      setAccounts(Array.isArray(data) ? data : []);
-    } catch (error) {
-      logger.error("Error fetching accounts", error);
-      toast.error("Failed to load accounts");
-      setAccounts([]);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      accountCode: "",
-      accountName: "",
-      accountType: "ASSET",
-      parentAccountId: "",
-      isActive: true,
-    });
-    setErrors({});
-    setEditingAccount(null);
-  };
-
-  const handleAdd = () => {
-    resetForm();
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (account) => {
-    setEditingAccount(account);
-    setFormData({
-      accountCode: account.accountCode || "",
-      accountName: account.accountName || "",
-      accountType: account.accountType || "ASSET",
-      parentAccountId: account.parentAccountId?.toString() || "",
-      isActive: account.isActive !== false,
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (account) => {
-    setAccountToDelete(account);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!accountToDelete) return;
-
-    try {
-      await financeApi.deleteAccount(accountToDelete.id);
-      toast.success("Account deleted successfully");
-      await fetchAccounts();
-      setIsDeleteDialogOpen(false);
-      setAccountToDelete(null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error deleting account");
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.accountCode.trim()) {
-      newErrors.accountCode = "Account code is required";
-    }
-    if (!formData.accountName.trim()) {
-      newErrors.accountName = "Account name is required";
-    }
-    if (!formData.accountType) {
-      newErrors.accountType = "Account type is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.warning("Please fix the form errors");
-      return;
-    }
-
-    setFormLoading(true);
-
+  const handleSubmit = (e) => {
+    // Custom data transformation for parentAccountId
     const submitData = {
       ...formData,
-      parentAccountId: formData.parentAccountId
-        ? parseInt(formData.parentAccountId)
-        : null,
+      parentAccountId: formData.parentAccountId ? parseInt(formData.parentAccountId) : null,
     };
+    // Sync back to internal hook state if needed, or pass directly
+    // This hook version uses formData directly.
+    baseSubmit(e);
+  };
 
+  const handleToggleStatus = async (account) => {
     try {
-      if (editingAccount) {
-        await financeApi.updateAccount(editingAccount.id, submitData);
-        toast.success("Account updated successfully");
-      } else {
-        await financeApi.createAccount(submitData);
-        toast.success("Account created successfully");
-      }
-      await fetchAccounts();
-      setIsModalOpen(false);
-      resetForm();
+      await financeApi.updateAccount(account.id, {
+        ...account,
+        isActive: account.isActive === false,
+      });
+      fetchAccounts();
     } catch (error) {
-      logger.error("Error saving account", error);
-      toast.error(error.response?.data?.message || "Error saving account");
-    } finally {
-      setFormLoading(false);
+      logger.error("Error toggling status", error);
     }
   };
 
@@ -262,7 +187,7 @@ const Accounts = () => {
                 : "text-gray-900 dark:text-gray-100"
             }`}
           >
-            ${Math.abs(amount).toLocaleString()}
+            ₹{Math.abs(amount).toLocaleString()}
           </span>
         );
       },
@@ -308,31 +233,31 @@ const Accounts = () => {
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
           <p className="text-gray-600 text-sm font-medium">Assets</p>
           <p className="text-2xl font-bold text-green-600 mt-1">
-            ${getTypeTotal("ASSET").toLocaleString()}
+            ₹{getTypeTotal("ASSET").toLocaleString()}
           </p>
         </Card>
         <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
           <p className="text-gray-600 text-sm font-medium">Liabilities</p>
           <p className="text-2xl font-bold text-red-600 mt-1">
-            ${getTypeTotal("LIABILITY").toLocaleString()}
+            ₹{getTypeTotal("LIABILITY").toLocaleString()}
           </p>
         </Card>
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
           <p className="text-gray-600 text-sm font-medium">Equity</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">
-            ${getTypeTotal("EQUITY").toLocaleString()}
+            ₹{getTypeTotal("EQUITY").toLocaleString()}
           </p>
         </Card>
         <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
           <p className="text-gray-600 text-sm font-medium">Revenue</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">
-            ${getTypeTotal("REVENUE").toLocaleString()}
+            ₹{getTypeTotal("REVENUE").toLocaleString()}
           </p>
         </Card>
         <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200">
           <p className="text-gray-600 text-sm font-medium">Expenses</p>
           <p className="text-2xl font-bold text-amber-600 mt-1">
-            ${getTypeTotal("EXPENSE").toLocaleString()}
+            ₹{getTypeTotal("EXPENSE").toLocaleString()}
           </p>
         </Card>
       </div>
@@ -376,6 +301,11 @@ const Accounts = () => {
                 <DropdownActions
                   actions={[
                     { label: "Edit Account", icon: Pencil, onClick: () => handleEdit(row) },
+                    { 
+                      label: row.isActive === false ? "Activate Account" : "Deactivate Account", 
+                      icon: row.isActive === false ? Power : PowerOff, 
+                      onClick: () => handleToggleStatus(row) 
+                    },
                     ...(canDeleteAccounts
                       ? [
                           { divider: true },

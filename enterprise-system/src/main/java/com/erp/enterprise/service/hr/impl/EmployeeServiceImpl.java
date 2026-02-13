@@ -37,7 +37,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeeDTO createEmployee(EmployeeCreateRequest request) {
+    @org.springframework.lang.NonNull
+    public EmployeeDTO createEmployee(@org.springframework.lang.NonNull EmployeeCreateRequest request) {
         // Business Logic: Check if employee code already exists
         if (employeeRepository.existsByEmployeeCode(request.getEmployeeCode())) {
             throw new DuplicateResourceException("Employee", "employeeCode", request.getEmployeeCode());
@@ -61,10 +62,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setStatus("ACTIVE");  // New employees are active by default
 
         // Business Logic: Set department if provided
-        if (request.getDepartmentId() != null) {
-            Department department = departmentRepository.findById(request.getDepartmentId())
+        Long departmentId = request.getDepartmentId();
+        if (departmentId != null) {
+            Department department = departmentRepository.findById(departmentId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Department", "id", request.getDepartmentId()));
+                            "Department", "id", departmentId));
             employee.setDepartment(department);
         }
 
@@ -75,7 +77,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeeDTO getEmployeeById(Long id) {
+    @org.springframework.lang.NonNull
+    public EmployeeDTO getEmployeeById(@org.springframework.lang.NonNull Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
 
@@ -83,7 +86,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeeDTO getEmployeeByCode(String employeeCode) {
+    @org.springframework.lang.NonNull
+    public EmployeeDTO getEmployeeByCode(@org.springframework.lang.NonNull String employeeCode) {
         Employee employee = employeeRepository.findByEmployeeCode(employeeCode)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Employee", "employeeCode", employeeCode));
@@ -120,7 +124,8 @@ public class EmployeeServiceImpl implements EmployeeService {
      * Security: Should be access-controlled (HR/Admin only)
      */
     @Override
-    public EmployeeDetailResponse getEmployeeDetailById(Long id) {
+    @org.springframework.lang.NonNull
+    public EmployeeDetailResponse getEmployeeDetailById(@org.springframework.lang.NonNull Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
 
@@ -128,7 +133,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeDTO> getEmployeesByDepartment(Long departmentId) {
+    public List<EmployeeDTO> getEmployeesByDepartment(@org.springframework.lang.NonNull Long departmentId) {
         // Business Logic: Verify department exists
         if (!departmentRepository.existsById(departmentId)) {
             throw new ResourceNotFoundException("Department", "id", departmentId);
@@ -142,7 +147,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public List<EmployeeDTO> getEmployeesByStatus(String status) {
+    public List<EmployeeDTO> getEmployeesByStatus(@org.springframework.lang.NonNull String status) {
         if (!isValidStatus(status)) {
             throw new BusinessException("Invalid employee status: " + status, "INVALID_STATUS");
         }
@@ -167,7 +172,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeeDTO updateEmployee(Long id, EmployeeDTO employeeDTO) {
+    @org.springframework.lang.NonNull
+    public EmployeeDTO updateEmployee(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull EmployeeDTO employeeDTO) {
         // Business Logic: Find existing employee
         Employee existingEmployee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
@@ -195,10 +201,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         existingEmployee.setSalary(employeeDTO.getSalary());
 
         // Update department if provided
-        if (employeeDTO.getDepartmentId() != null) {
-            Department department = departmentRepository.findById(employeeDTO.getDepartmentId())
+        Long departmentId = employeeDTO.getDepartmentId();
+        if (departmentId != null) {
+            Department department = departmentRepository.findById(departmentId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Department", "id", employeeDTO.getDepartmentId()));
+                            "Department", "id", departmentId));
             existingEmployee.setDepartment(department);
         } else {
             existingEmployee.setDepartment(null);
@@ -211,7 +218,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public void deleteEmployee(Long id) {
+    public void deleteEmployee(@org.springframework.lang.NonNull Long id) {
         // Business Logic: Soft delete to preserve referential integrity
         // Cannot hard delete employees with attendance, leave requests, etc.
         Employee employee = employeeRepository.findById(id)
@@ -238,7 +245,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeeDTO changeEmployeeStatus(Long id, String status) {
+    @org.springframework.lang.NonNull
+    public EmployeeDTO changeEmployeeStatus(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull String status) {
         // Business Logic: Validate status
         if (!isValidStatus(status)) {
             throw new BusinessException("Invalid employee status: " + status, "INVALID_STATUS");

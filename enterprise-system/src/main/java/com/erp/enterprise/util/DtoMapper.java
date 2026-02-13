@@ -10,6 +10,7 @@ import com.erp.enterprise.dto.sales.*;
 import com.erp.enterprise.entity.sales.*;
 
 
+import org.springframework.lang.NonNull;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,11 +21,8 @@ public class DtoMapper {
     // ==================== Department Mapping ====================
 
     // Convert Department Entity to DTO
-    public static DepartmentDTO toDepartmentDTO(Department department) {
-        if (department == null) {
-            return null;
-        }
-
+    @NonNull
+    public static DepartmentDTO toDepartmentDTO(@NonNull Department department) {
         DepartmentDTO dto = new DepartmentDTO();
         dto.setId(department.getId());
         dto.setName(department.getName());
@@ -42,11 +40,8 @@ public class DtoMapper {
     }
 
     // Convert DepartmentDTO to Entity
-    public static Department toDepartmentEntity(DepartmentDTO dto) {
-        if (dto == null) {
-            return null;
-        }
-
+    @NonNull
+    public static Department toDepartmentEntity(@NonNull DepartmentDTO dto) {
         Department department = new Department();
         department.setId(dto.getId());
         department.setName(dto.getName());
@@ -59,11 +54,8 @@ public class DtoMapper {
     // ==================== Employee Mapping ====================
 
     // Convert Employee Entity to DTO
-    public static EmployeeDTO toEmployeeDTO(Employee employee) {
-        if (employee == null) {
-            return null;
-        }
-
+    @NonNull
+    public static EmployeeDTO toEmployeeDTO(@NonNull Employee employee) {
         EmployeeDTO dto = new EmployeeDTO();
         dto.setId(employee.getId());
         dto.setEmployeeCode(employee.getEmployeeCode());
@@ -116,11 +108,8 @@ public class DtoMapper {
      * Used for: GET /api/employees (list view)
      * Security: No salary, no phone, no personal details
      */
-    public static EmployeeListResponse toEmployeeListResponse(Employee employee) {
-        if (employee == null) {
-            return null;
-        }
-
+    @NonNull
+    public static EmployeeListResponse toEmployeeListResponse(@NonNull Employee employee) {
         EmployeeListResponse response = new EmployeeListResponse();
         response.setId(employee.getId());
         response.setEmployeeCode(employee.getEmployeeCode());
@@ -146,11 +135,8 @@ public class DtoMapper {
      * Used for: GET /api/employees/{id} (detail view)
      * Security: Includes sensitive data - should be access-controlled
      */
-    public static EmployeeDetailResponse toEmployeeDetailResponse(Employee employee) {
-        if (employee == null) {
-            return null;
-        }
-
+    @NonNull
+    public static EmployeeDetailResponse toEmployeeDetailResponse(@NonNull Employee employee) {
         EmployeeDetailResponse response = new EmployeeDetailResponse();
         response.setId(employee.getId());
         response.setEmployeeCode(employee.getEmployeeCode());
@@ -176,11 +162,8 @@ public class DtoMapper {
 
     // ==================== Attendance Mapping ====================
 
-    public static AttendanceDTO toAttendanceDTO(Attendance attendance) {
-        if (attendance == null) {
-            return null;
-        }
-
+    @NonNull
+    public static AttendanceDTO toAttendanceDTO(@NonNull Attendance attendance) {
         AttendanceDTO dto = new AttendanceDTO();
         dto.setId(attendance.getId());
         dto.setDate(attendance.getDate());
@@ -233,11 +216,8 @@ public class DtoMapper {
 
     // ==================== Leave Request Mapping ====================
 
-    public static LeaveRequestDTO toLeaveRequestDTO(LeaveRequest leaveRequest) {
-        if (leaveRequest == null) {
-            return null;
-        }
-
+    @NonNull
+    public static LeaveRequestDTO toLeaveRequestDTO(@NonNull LeaveRequest leaveRequest) {
         LeaveRequestDTO dto = new LeaveRequestDTO();
         dto.setId(leaveRequest.getId());
         dto.setStartDate(leaveRequest.getStartDate());
@@ -270,11 +250,8 @@ public class DtoMapper {
 
 // ==================== Account Mapping ====================
 
-    public static AccountDTO toAccountDTO(Account account) {
-        if (account == null) {
-            return null;
-        }
-
+    @NonNull
+    public static AccountDTO toAccountDTO(@NonNull Account account) {
         AccountDTO dto = new AccountDTO();
         dto.setId(account.getId());
         dto.setAccountCode(account.getAccountCode());
@@ -293,11 +270,7 @@ public class DtoMapper {
         return dto;
     }
 
-    public static Account toAccountEntity(AccountDTO dto) {
-        if (dto == null) {
-            return null;
-        }
-
+    public static Account toAccountEntity(@NonNull AccountDTO dto) {
         Account account = new Account();
         account.setId(dto.getId());
         account.setAccountCode(dto.getAccountCode());
@@ -311,11 +284,8 @@ public class DtoMapper {
 
 // ==================== Transaction Entry Mapping ====================
 
-    public static TransactionEntryDTO toTransactionEntryDTO(TransactionEntry entry) {
-        if (entry == null) {
-            return null;
-        }
-
+    @NonNull
+    public static TransactionEntryDTO toTransactionEntryDTO(@NonNull TransactionEntry entry) {
         TransactionEntryDTO dto = new TransactionEntryDTO();
         dto.setId(entry.getId());
         dto.setEntryType(entry.getEntryType());
@@ -333,11 +303,8 @@ public class DtoMapper {
 
 // ==================== Transaction Mapping ====================
 
-    public static TransactionDTO toTransactionDTO(Transaction transaction) {
-        if (transaction == null) {
-            return null;
-        }
-
+    @NonNull
+    public static TransactionDTO toTransactionDTO(@NonNull Transaction transaction) {
         TransactionDTO dto = new TransactionDTO();
         dto.setId(transaction.getId());
         dto.setTransactionCode(transaction.getTransactionCode());
@@ -365,11 +332,8 @@ public class DtoMapper {
 
 // ==================== Expense Mapping ====================
 
-    public static ExpenseDTO toExpenseDTO(Expense expense) {
-        if (expense == null) {
-            return null;
-        }
-
+    @NonNull
+    public static ExpenseDTO toExpenseDTO(@NonNull Expense expense) {
         ExpenseDTO dto = new ExpenseDTO();
         dto.setId(expense.getId());
         dto.setExpenseCode(expense.getExpenseCode());

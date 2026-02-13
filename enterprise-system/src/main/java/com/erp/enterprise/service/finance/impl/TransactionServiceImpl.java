@@ -19,6 +19,7 @@ import com.erp.enterprise.repository.hr.UserRepository;
 import com.erp.enterprise.service.finance.AccountService;
 import com.erp.enterprise.service.finance.TransactionService;
 import com.erp.enterprise.service.common.SequenceGeneratorService;
+import com.erp.enterprise.service.common.AuditLogService;
 import com.erp.enterprise.util.DtoMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,22 +54,25 @@ public class TransactionServiceImpl implements TransactionService {
     private final UserRepository userRepository;
     private final AccountService accountService;
     private final SequenceGeneratorService sequenceGenerator;
+    private final AuditLogService auditLogService;
 
     @Autowired
     public TransactionServiceImpl(TransactionRepository transactionRepository,
                                   AccountRepository accountRepository,
                                   UserRepository userRepository,
                                   AccountService accountService,
-                                  SequenceGeneratorService sequenceGenerator) {
+                                  SequenceGeneratorService sequenceGenerator,
+                                  AuditLogService auditLogService) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.userRepository = userRepository;
         this.accountService = accountService;
         this.sequenceGenerator = sequenceGenerator;
+        this.auditLogService = auditLogService;
     }
 
     @Override
-    public TransactionDTO createTransaction(TransactionCreateRequest request) {
+    public TransactionDTO createTransaction(@org.springframework.lang.NonNull TransactionCreateRequest request) {
         // Business Logic: Check if transaction code exists
         if (transactionRepository.existsByTransactionCode(request.getTransactionCode())) {
             throw new DuplicateResourceException(
@@ -76,9 +80,13 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         // Validate user
-        User user = userRepository.findById(request.getCreatedById())
+        Long createdById = request.getCreatedById();
+        if (createdById == null) {
+             throw new BusinessException("Created By ID is required", "MISSING_USER_ID");
+        }
+        User user = userRepository.findById(createdById)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "User", "id", request.getCreatedById()));
+                        "User", "id", createdById));
 
         // Business Logic: Validate entries (must have at least 2)
         if (request.getEntries() == null || request.getEntries().size() < 2) {
@@ -122,9 +130,13 @@ public class TransactionServiceImpl implements TransactionService {
         // Create transaction entries
         for (TransactionEntryDTO entryDTO : request.getEntries()) {
             // Validate account exists
-            Account account = accountRepository.findById(entryDTO.getAccountId())
+            Long accountId = entryDTO.getAccountId();
+            if (accountId == null) {
+                throw new BusinessException("Account ID is required for transaction entry", "MISSING_ACCOUNT_ID");
+            }
+            Account account = accountRepository.findById(accountId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Account", "id", entryDTO.getAccountId()));
+                            "Account", "id", accountId));
 
             // Create entry
             TransactionEntry entry = new TransactionEntry();
@@ -142,14 +154,20 @@ public class TransactionServiceImpl implements TransactionService {
 
         // Update account balances
         for (TransactionEntry entry : savedTransaction.getEntries()) {
-            accountService.updateAccountBalance(entry.getAccount().getId());
+            if (entry.getAccount() != null && entry.getAccount().getId() != null) {
+                accountService.updateAccountBalance(entry.getAccount().getId());
+            }
         }
+
+        // Log action
+        auditLogService.log("CREATE", "TRANSACTION", savedTransaction.getId(), null, 
+                String.format("Created manual transaction: %s", savedTransaction.getTransactionCode()));
 
         return DtoMapper.toTransactionDTO(savedTransaction);
     }
 
     @Override
-    public TransactionDTO getTransactionById(Long id) {
+    public TransactionDTO getTransactionById(@org.springframework.lang.NonNull Long id) {
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction", "id", id));
 
@@ -157,7 +175,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public TransactionDTO getTransactionByCode(String transactionCode) {
+    public TransactionDTO getTransactionByCode(@org.springframework.lang.NonNull String transactionCode) {
         Transaction transaction = transactionRepository.findByTransactionCode(transactionCode)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Transaction", "transactionCode", transactionCode));
@@ -175,7 +193,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionDTO> getTransactionsByDate(LocalDate date) {
+    public List<TransactionDTO> getTransactionsByDate(@org.springframework.lang.NonNull LocalDate date) {
         List<Transaction> transactions =
                 transactionRepository.findByTransactionDateOrderByCreatedAtDesc(date);
 
@@ -185,7 +203,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionDTO> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate) {
+    public List<TransactionDTO> getTransactionsByDateRange(@org.springframework.lang.NonNull LocalDate startDate, @org.springframework.lang.NonNull LocalDate endDate) {
         // Validate date range
         if (startDate.isAfter(endDate)) {
             throw new BusinessException(
@@ -203,7 +221,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public List<TransactionDTO> getTransactionsByUser(Long userId) {
+    public List<TransactionDTO> getTransactionsByUser(@org.springframework.lang.NonNull Long userId) {
         // Validate user exists
         if (!userRepository.existsById(userId)) {
             throw new ResourceNotFoundException("User", "id", userId);
@@ -228,7 +246,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void deleteTransaction(Long id) {
+    public void deleteTransaction(@org.springframework.lang.NonNull Long id) {
         // Find transaction
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Transaction", "id", id));
@@ -246,6 +264,10 @@ public class TransactionServiceImpl implements TransactionService {
         for (Long accountId : affectedAccountIds) {
             accountService.updateAccountBalance(accountId);
         }
+
+        // Log action
+        auditLogService.log("DELETE", "TRANSACTION", id, 
+                String.format("Deleted transaction: %s", transaction.getTransactionCode()), null);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -253,7 +275,7 @@ public class TransactionServiceImpl implements TransactionService {
     // ═══════════════════════════════════════════════════════════════════
 
     @Override
-    public void autoCreatePaymentTransaction(Payment payment, Invoice invoice) {
+    public void autoCreatePaymentTransaction(@org.springframework.lang.NonNull Payment payment, @org.springframework.lang.NonNull Invoice invoice) {
         /**
          * Phase 2: Payment → Finance Auto-Transaction
          *
@@ -324,6 +346,10 @@ public class TransactionServiceImpl implements TransactionService {
             accountService.updateAccountBalance(debitAccount.getId());
             accountService.updateAccountBalance(creditAccount.getId());
 
+            // Log action
+            auditLogService.log("AUTO_CREATE", "TRANSACTION", saved.getId(), null, 
+                    String.format("Auto-created transaction for Payment: %s", payment.getPaymentNumber()));
+
             logger.info("Auto-created finance transaction {} for Payment {} - Amount: {}",
                     txnCode, payment.getPaymentNumber(), payment.getAmount());
 
@@ -335,7 +361,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public void autoCreatePurchaseTransaction(PurchaseOrder purchaseOrder) {
+    public void autoCreatePurchaseTransaction(@org.springframework.lang.NonNull PurchaseOrder purchaseOrder) {
         /**
          * Phase 3: PO Received → Finance Auto-Transaction
          *
@@ -396,6 +422,10 @@ public class TransactionServiceImpl implements TransactionService {
             // Update account balances
             accountService.updateAccountBalance(expenseAccount.get().getId());
             accountService.updateAccountBalance(cashAccount.get().getId());
+
+            // Log action
+            auditLogService.log("AUTO_CREATE", "TRANSACTION", saved.getId(), null, 
+                    String.format("Auto-created transaction for PO: %s", purchaseOrder.getPoNumber()));
 
             logger.info("Auto-created finance transaction {} for PO {} - Amount: {}",
                     txnCode, purchaseOrder.getPoNumber(), purchaseOrder.getTotalAmount());

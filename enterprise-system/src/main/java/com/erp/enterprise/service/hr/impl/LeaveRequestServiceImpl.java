@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,16 +50,25 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public LeaveRequestDTO submitLeaveRequest(LeaveRequestCreateRequest request) {
+    @org.springframework.lang.NonNull
+    public LeaveRequestDTO submitLeaveRequest(@org.springframework.lang.NonNull LeaveRequestCreateRequest request) {
         // Validate employee
-        Employee employee = employeeRepository.findById(request.getEmployeeId())
+        Long employeeId = request.getEmployeeId();
+        if (employeeId == null) {
+             throw new BusinessException("Employee ID is required", "MISSING_EMPLOYEE_ID");
+        }
+        Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Employee", "id", request.getEmployeeId()));
+                        "Employee", "id", employeeId));
 
         // Validate leave type
-        LeaveType leaveType = leaveTypeRepository.findById(request.getLeaveTypeId())
+        Long leaveTypeId = request.getLeaveTypeId();
+        if (leaveTypeId == null) {
+             throw new BusinessException("Leave Type ID is required", "MISSING_LEAVE_TYPE_ID");
+        }
+        LeaveType leaveType = leaveTypeRepository.findById(leaveTypeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "LeaveType", "id", request.getLeaveTypeId()));
+                        "LeaveType", "id", leaveTypeId));
 
         // Business Logic: Validate dates
         if (request.getStartDate().isAfter(request.getEndDate())) {
@@ -68,10 +78,17 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         // Business Logic: Check for overlapping approved leaves
+        LocalDate startDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
+        
+        if (startDate == null || endDate == null) {
+            throw new BusinessException("Start and End dates are required", "MISSING_DATES");
+        }
+        
         List<LeaveRequest> overlappingLeaves = leaveRequestRepository.findOverlappingLeaves(
-                request.getEmployeeId(),
-                request.getStartDate(),
-                request.getEndDate());
+                employeeId,
+                startDate,
+                endDate);
 
         if (!overlappingLeaves.isEmpty()) {
             throw new BusinessException(
@@ -80,10 +97,10 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
         }
 
         // Business Logic: Check leave balance for current year
-        int currentYear = request.getStartDate().getYear();
+        int currentYear = startDate.getYear();
         int leavesTaken = leaveRequestRepository.countApprovedLeavesByTypeAndYear(
-                request.getEmployeeId(),
-                request.getLeaveTypeId(),
+                employeeId,
+                leaveTypeId,
                 currentYear);
 
         int remainingLeaves = leaveType.getDaysAllowed() - leavesTaken;
@@ -110,7 +127,8 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public LeaveRequestDTO getLeaveRequestById(Long id) {
+    @org.springframework.lang.NonNull
+    public LeaveRequestDTO getLeaveRequestById(@org.springframework.lang.NonNull Long id) {
         LeaveRequest leaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest", "id", id));
 
@@ -127,7 +145,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public List<LeaveRequestDTO> getLeaveRequestsByEmployee(Long employeeId) {
+    public List<LeaveRequestDTO> getLeaveRequestsByEmployee(@org.springframework.lang.NonNull Long employeeId) {
         // Validate employee
         if (!employeeRepository.existsById(employeeId)) {
             throw new ResourceNotFoundException("Employee", "id", employeeId);
@@ -142,7 +160,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public List<LeaveRequestDTO> getLeaveRequestsByStatus(String status) {
+    public List<LeaveRequestDTO> getLeaveRequestsByStatus(@org.springframework.lang.NonNull String status) {
         // Validate status
         if (!isValidLeaveStatus(status)) {
             throw new BusinessException(
@@ -159,7 +177,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public List<LeaveRequestDTO> getPendingLeaveRequestsByEmployee(Long employeeId) {
+    public List<LeaveRequestDTO> getPendingLeaveRequestsByEmployee(@org.springframework.lang.NonNull Long employeeId) {
         // Validate employee
         if (!employeeRepository.existsById(employeeId)) {
             throw new ResourceNotFoundException("Employee", "id", employeeId);
@@ -174,7 +192,8 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public LeaveRequestDTO processLeaveRequest(Long id, LeaveApprovalRequest approvalRequest) {
+    @org.springframework.lang.NonNull
+    public LeaveRequestDTO processLeaveRequest(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull LeaveApprovalRequest approvalRequest) {
         // Find leave request
         LeaveRequest leaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest", "id", id));
@@ -188,8 +207,9 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
 
         // Validate approver - optional for HR users who may not have employee records
         Employee approver = null;
-        if (approvalRequest.getApprovedById() != null) {
-            approver = employeeRepository.findById(approvalRequest.getApprovedById())
+        Long approvedById = approvalRequest.getApprovedById();
+        if (approvedById != null) {
+            approver = employeeRepository.findById(approvedById)
                     .orElse(null); // Don't throw if not found - HR users may not have employee records
         }
 
@@ -213,7 +233,8 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public LeaveRequestDTO cancelLeaveRequest(Long id) {
+    @org.springframework.lang.NonNull
+    public LeaveRequestDTO cancelLeaveRequest(@org.springframework.lang.NonNull Long id) {
         // Find leave request
         LeaveRequest leaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest", "id", id));
@@ -233,7 +254,7 @@ public class LeaveRequestServiceImpl implements LeaveRequestService {
     }
 
     @Override
-    public void deleteLeaveRequest(Long id) {
+    public void deleteLeaveRequest(@org.springframework.lang.NonNull Long id) {
         // Check if leave request exists
         LeaveRequest leaveRequest = leaveRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest", "id", id));

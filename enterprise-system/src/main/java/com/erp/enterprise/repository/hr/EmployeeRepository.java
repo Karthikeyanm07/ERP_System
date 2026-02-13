@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.hr;
 
 import com.erp.enterprise.entity.hr.Employee;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,11 @@ import java.util.Optional;
 // Repository for Employee
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"department"})
+    @org.springframework.lang.NonNull
+    List<Employee> findAll();
 
     // Check if employee code exists (for duplicate prevention)
     boolean existsByEmployeeCode(String employeeCode);

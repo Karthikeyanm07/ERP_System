@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.finanace;
 
 import com.erp.enterprise.entity.finance.TransactionEntry;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,11 +17,16 @@ import java.util.List;
 @Repository
 public interface TransactionEntryRepository extends JpaRepository<TransactionEntry, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"account"})
+    @org.springframework.lang.NonNull
+    List<TransactionEntry> findAll();
+
     // Find entries by transaction
     List<TransactionEntry> findByTransactionId(Long transactionId);
 
-    // Find entries by account
-    List<TransactionEntry> findByAccountIdOrderByTransactionTransactionDateDesc(Long accountId);
+    // Check if entries exist for account
+    boolean existsByAccountId(Long accountId);
 
     // Find entries by account and entry type
     List<TransactionEntry> findByAccountIdAndEntryType(Long accountId, String entryType);

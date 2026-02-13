@@ -47,7 +47,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO createExpense(ExpenseCreateRequest request) {
+    public ExpenseDTO createExpense(@org.springframework.lang.NonNull ExpenseCreateRequest request) {
         // Auto-generate expense code if blank
         String expenseCode = request.getExpenseCode();
         if (expenseCode == null || expenseCode.isBlank()) {
@@ -69,10 +69,11 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setStatus("PENDING");  // New expenses are pending
 
         // Set employee if provided
-        if (request.getEmployeeId() != null) {
-            Employee employee = employeeRepository.findById(request.getEmployeeId())
+        Long employeeId = request.getEmployeeId();
+        if (employeeId != null) {
+            Employee employee = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Employee", "id", request.getEmployeeId()));
+                            "Employee", "id", employeeId));
             expense.setEmployee(employee);
         }
 
@@ -81,7 +82,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO getExpenseById(Long id) {
+    public ExpenseDTO getExpenseById(@org.springframework.lang.NonNull Long id) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", "id", id));
 
@@ -89,7 +90,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO getExpenseByCode(String expenseCode) {
+    public ExpenseDTO getExpenseByCode(@org.springframework.lang.NonNull String expenseCode) {
         Expense expense = expenseRepository.findByExpenseCode(expenseCode)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Expense", "expenseCode", expenseCode));
@@ -107,7 +108,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public List<ExpenseDTO> getExpensesByEmployee(Long employeeId) {
+    public List<ExpenseDTO> getExpensesByEmployee(@org.springframework.lang.NonNull Long employeeId) {
         // Validate employee exists
         if (!employeeRepository.existsById(employeeId)) {
             throw new ResourceNotFoundException("Employee", "id", employeeId);
@@ -121,7 +122,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public List<ExpenseDTO> getExpensesByStatus(String status) {
+    public List<ExpenseDTO> getExpensesByStatus(@org.springframework.lang.NonNull String status) {
         // Validate status
         if (!isValidExpenseStatus(status)) {
             throw new BusinessException(
@@ -137,7 +138,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public List<ExpenseDTO> getExpensesByCategory(String category) {
+    public List<ExpenseDTO> getExpensesByCategory(@org.springframework.lang.NonNull String category) {
         List<Expense> expenses = expenseRepository.findByCategoryOrderByExpenseDateDesc(category);
 
         return expenses.stream()
@@ -146,7 +147,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public List<ExpenseDTO> getExpensesByDateRange(LocalDate startDate, LocalDate endDate) {
+    public List<ExpenseDTO> getExpensesByDateRange(@org.springframework.lang.NonNull LocalDate startDate, @org.springframework.lang.NonNull LocalDate endDate) {
         // Validate date range
         if (startDate.isAfter(endDate)) {
             throw new BusinessException(
@@ -163,7 +164,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public List<ExpenseDTO> getExpensesByEmployeeAndStatus(Long employeeId, String status) {
+    public List<ExpenseDTO> getExpensesByEmployeeAndStatus(@org.springframework.lang.NonNull Long employeeId, @org.springframework.lang.NonNull String status) {
         // Validate employee exists
         if (!employeeRepository.existsById(employeeId)) {
             throw new ResourceNotFoundException("Employee", "id", employeeId);
@@ -185,7 +186,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO updateExpense(Long id, ExpenseDTO expenseDTO) {
+    public ExpenseDTO updateExpense(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull ExpenseDTO expenseDTO) {
         // Find existing expense
         Expense existingExpense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", "id", id));
@@ -213,10 +214,11 @@ public class ExpenseServiceImpl implements ExpenseService {
         existingExpense.setDescription(expenseDTO.getDescription());
 
         // Update employee if provided
-        if (expenseDTO.getEmployeeId() != null) {
-            Employee employee = employeeRepository.findById(expenseDTO.getEmployeeId())
+        Long employeeId = expenseDTO.getEmployeeId();
+        if (employeeId != null) {
+            Employee employee = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Employee", "id", expenseDTO.getEmployeeId()));
+                            "Employee", "id", employeeId));
             existingExpense.setEmployee(employee);
         }
 
@@ -225,7 +227,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO approveExpense(Long id) {
+    public ExpenseDTO approveExpense(@org.springframework.lang.NonNull Long id) {
         // Find expense
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", "id", id));
@@ -245,7 +247,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO rejectExpense(Long id) {
+    public ExpenseDTO rejectExpense(@org.springframework.lang.NonNull Long id) {
         // Find expense
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", "id", id));
@@ -265,7 +267,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO markExpenseAsPaid(Long id) {
+    public ExpenseDTO markExpenseAsPaid(@org.springframework.lang.NonNull Long id) {
         // Find expense
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", "id", id));
@@ -285,7 +287,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public void deleteExpense(Long id) {
+    public void deleteExpense(@org.springframework.lang.NonNull Long id) {
         // Find expense
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", "id", id));

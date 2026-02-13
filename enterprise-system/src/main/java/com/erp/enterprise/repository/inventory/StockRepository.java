@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.inventory;
 
 import com.erp.enterprise.entity.inventory.Stock;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +15,11 @@ import java.util.Optional;
  */
 @Repository
 public interface StockRepository extends JpaRepository<Stock, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"product", "warehouse"})
+    @org.springframework.lang.NonNull
+    List<Stock> findAll();
 
     // Find stock by product and warehouse
     Optional<Stock> findByProductIdAndWarehouseId(Long productId, Long warehouseId);
@@ -31,8 +37,15 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
     @Query("SELECT COALESCE(SUM(s.quantity), 0) FROM Stock s WHERE s.product.id = :productId")
     Integer getTotalStockForProduct(@Param("productId") Long productId);
 
+    // Get total stock quantities for multiple products (to resolve N+1 bottlenecks)
+    @Query("SELECT s.product.id, COALESCE(SUM(s.quantity), 0) FROM Stock s WHERE s.product.id IN :productIds GROUP BY s.product.id")
+    List<Object[]> getTotalStockForProducts(@Param("productIds") List<Long> productIds);
+
     // Find products with low stock (below reorder level)
     @Query("SELECT s FROM Stock s WHERE s.product.reorderLevel >= " +
             "(SELECT COALESCE(SUM(st.quantity), 0) FROM Stock st WHERE st.product.id = s.product.id)")
     List<Stock> findLowStockItems();
+
+    // Delete all stock for a product
+    void deleteByProductId(Long productId);
 }

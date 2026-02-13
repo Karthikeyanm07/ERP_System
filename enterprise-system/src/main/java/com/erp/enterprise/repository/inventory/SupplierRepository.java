@@ -15,6 +15,10 @@ import java.util.Optional;
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, Long> {
 
+    @Override
+    @org.springframework.lang.NonNull
+    List<Supplier> findAll();
+
     // Check if supplier code exists
     boolean existsBySupplierCode(String supplierCode);
 

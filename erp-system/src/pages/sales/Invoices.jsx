@@ -15,7 +15,7 @@ import Button from "../../components/common/Button";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
-import { FileText, Filter, DollarSign, AlertCircle } from "lucide-react";
+import { FileText, Filter, IndianRupee, AlertCircle } from "lucide-react";
 
 const Invoices = () => {
   const { execute, loading } = useApi();
@@ -115,7 +115,7 @@ const Invoices = () => {
       header: "Amount",
       cell: ({ getValue }) => (
         <span className="font-semibold">
-          ${parseFloat(getValue() || 0).toLocaleString()}
+          ₹{parseFloat(getValue() || 0).toLocaleString()}
         </span>
       ),
     },
@@ -160,7 +160,7 @@ const Invoices = () => {
         <MetricCard
           title="Paid"
           value={`₹${totalPaid.toLocaleString()}`}
-          icon={DollarSign}
+          icon={IndianRupee}
           accent="green"
         />
         <MetricCard

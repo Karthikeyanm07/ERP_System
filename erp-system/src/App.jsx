@@ -59,6 +59,7 @@ import Payments from "./pages/sales/Payments";
 // Profile & Settings
 import Profile from "./pages/profile/Profile";
 import Settings from "./pages/settings/Settings";
+import AuditLogs from "./pages/settings/AuditLogs";
 
 // Legal
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
@@ -154,6 +155,11 @@ const AppRoutes = () => {
           <Route path="orders" element={<SalesOrders />} />
           <Route path="invoices" element={<Invoices />} />
           <Route path="payments" element={<Payments />} />
+        </Route>
+
+        {/* Admin/System Routes */}
+        <Route path="admin">
+          <Route path="audit-logs" element={<AuditLogs />} />
         </Route>
       </Route>
 

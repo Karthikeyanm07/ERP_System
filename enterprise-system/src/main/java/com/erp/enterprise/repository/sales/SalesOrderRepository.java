@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.sales;
 
 import com.erp.enterprise.entity.sales.SalesOrder;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -32,10 +33,18 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
     // Find orders by warehouse
     List<SalesOrder> findByWarehouseIdOrderByOrderDateDesc(Long warehouseId);
 
+    // Optimized listing methods with EntityGraph to prevent N+1 queries
+    @Override
+    @EntityGraph(attributePaths = {"items", "customer", "warehouse"})
+    @org.springframework.lang.NonNull
+    List<SalesOrder> findAll();
+
     // Find orders by status
+    @EntityGraph(attributePaths = {"items", "customer", "warehouse"})
     List<SalesOrder> findByStatusOrderByOrderDateDesc(String status);
 
     // Find orders in date range
+    @EntityGraph(attributePaths = {"items", "customer", "warehouse"})
     List<SalesOrder> findByOrderDateBetweenOrderByOrderDateDesc(
             LocalDate startDate, LocalDate endDate);
 
@@ -43,6 +52,7 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
     List<SalesOrder> findByCreatedByIdOrderByCreatedAtDesc(Long userId);
 
     // Get recent orders
+    @EntityGraph(attributePaths = {"items", "customer", "warehouse"})
     @Query("SELECT so FROM SalesOrder so ORDER BY so.orderDate DESC, so.createdAt DESC")
     List<SalesOrder> findRecentSalesOrders();
 }

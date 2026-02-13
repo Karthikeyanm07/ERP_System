@@ -8,6 +8,7 @@ import com.erp.enterprise.exception.ResourceNotFoundException;
 import com.erp.enterprise.repository.finanace.AccountRepository;
 import com.erp.enterprise.repository.finanace.TransactionEntryRepository;
 import com.erp.enterprise.service.finance.AccountService;
+import com.erp.enterprise.service.common.AuditLogService;
 import com.erp.enterprise.util.DtoMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,16 +33,19 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionEntryRepository transactionEntryRepository;
+    private final AuditLogService auditLogService;
 
     @Autowired
     public AccountServiceImpl(AccountRepository accountRepository,
-                              TransactionEntryRepository transactionEntryRepository) {
+                              TransactionEntryRepository transactionEntryRepository,
+                              AuditLogService auditLogService) {
         this.accountRepository = accountRepository;
         this.transactionEntryRepository = transactionEntryRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Override
-    public AccountDTO createAccount(AccountDTO accountDTO) {
+    public AccountDTO createAccount(@org.springframework.lang.NonNull AccountDTO accountDTO) {
         // Business Logic: Check if account code already exists
         if (accountRepository.existsByAccountCode(accountDTO.getAccountCode())) {
             throw new DuplicateResourceException(
@@ -59,10 +63,11 @@ public class AccountServiceImpl implements AccountService {
         Account account = DtoMapper.toAccountEntity(accountDTO);
 
         // Set parent account if provided
-        if (accountDTO.getParentAccountId() != null) {
-            Account parentAccount = accountRepository.findById(accountDTO.getParentAccountId())
+        Long parentId = accountDTO.getParentAccountId();
+        if (parentId != null) {
+            Account parentAccount = accountRepository.findById(parentId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Account", "id", accountDTO.getParentAccountId()));
+                            "Account", "id", parentId));
             account.setParentAccount(parentAccount);
         }
 
@@ -72,11 +77,16 @@ public class AccountServiceImpl implements AccountService {
         }
 
         Account savedAccount = accountRepository.save(account);
+
+        // Log action
+        auditLogService.log("CREATE", "ACCOUNT", savedAccount.getId(), null, 
+                String.format("Created account: %s (%s)", savedAccount.getAccountName(), savedAccount.getAccountCode()));
+
         return DtoMapper.toAccountDTO(savedAccount);
     }
 
     @Override
-    public AccountDTO getAccountById(Long id) {
+    public AccountDTO getAccountById(@org.springframework.lang.NonNull Long id) {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account", "id", id));
 
@@ -84,7 +94,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountDTO getAccountByCode(String accountCode) {
+    public AccountDTO getAccountByCode(@org.springframework.lang.NonNull String accountCode) {
         Account account = accountRepository.findByAccountCode(accountCode)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Account", "accountCode", accountCode));
@@ -102,7 +112,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<AccountDTO> getAccountsByType(String accountType) {
+    public List<AccountDTO> getAccountsByType(@org.springframework.lang.NonNull String accountType) {
         // Validate account type
         if (!isValidAccountType(accountType)) {
             throw new BusinessException(
@@ -136,7 +146,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<AccountDTO> getChildAccounts(Long parentAccountId) {
+    public List<AccountDTO> getChildAccounts(@org.springframework.lang.NonNull Long parentAccountId) {
         // Validate parent account exists
         if (!accountRepository.existsById(parentAccountId)) {
             throw new ResourceNotFoundException("Account", "id", parentAccountId);
@@ -163,7 +173,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountDTO updateAccount(Long id, AccountDTO accountDTO) {
+    public AccountDTO updateAccount(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull AccountDTO accountDTO) {
         // Find existing account
         Account existingAccount = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account", "id", id));
@@ -189,13 +199,14 @@ public class AccountServiceImpl implements AccountService {
         existingAccount.setIsActive(accountDTO.getIsActive());
 
         // Update parent account if provided
-        if (accountDTO.getParentAccountId() != null) {
-            Account parentAccount = accountRepository.findById(accountDTO.getParentAccountId())
+        Long parentId = accountDTO.getParentAccountId();
+        if (parentId != null) {
+            Account parentAccount = accountRepository.findById(parentId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Account", "id", accountDTO.getParentAccountId()));
+                            "Account", "id", parentId));
 
             // Business Logic: Prevent circular reference
-            if (parentAccount.getId().equals(id)) {
+            if (parentId.equals(id)) {
                 throw new BusinessException(
                         "Account cannot be its own parent",
                         "CIRCULAR_PARENT_REFERENCE");
@@ -207,17 +218,26 @@ public class AccountServiceImpl implements AccountService {
         }
 
         Account updatedAccount = accountRepository.save(existingAccount);
+
+        // Log action
+        auditLogService.log("UPDATE", "ACCOUNT", updatedAccount.getId(), null, 
+                String.format("Updated account: %s", updatedAccount.getAccountCode()));
+
         return DtoMapper.toAccountDTO(updatedAccount);
     }
 
     @Override
-    public void deleteAccount(Long id) {
+    public void deleteAccount(@org.springframework.lang.NonNull Long id) {
         // Check if account exists
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account", "id", id));
 
         // Business Logic: Check if account has transactions
-        // (You could add a check here if needed)
+        if (transactionEntryRepository.existsByAccountId(id)) {
+            throw new BusinessException(
+                    "Cannot delete account with existing transactions. Deactivate it instead to preserve financial records.",
+                    "ACCOUNT_HAS_TRANSACTIONS");
+        }
 
         // Business Logic: Check if account has child accounts
         List<Account> childAccounts = accountRepository.findByParentAccountId(id);
@@ -228,10 +248,14 @@ public class AccountServiceImpl implements AccountService {
         }
 
         accountRepository.delete(account);
+
+        // Log action
+        auditLogService.log("DELETE", "ACCOUNT", id, 
+                String.format("Deleted account: %s", account.getAccountCode()), null);
     }
 
     @Override
-    public void updateAccountBalance(Long accountId) {
+    public void updateAccountBalance(@org.springframework.lang.NonNull Long accountId) {
         // Find account
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account", "id", accountId));
@@ -241,6 +265,10 @@ public class AccountServiceImpl implements AccountService {
 
         account.setBalance(balance);
         accountRepository.save(account);
+
+        // Log balance update (optional but good for tracking finance syncs)
+        auditLogService.log("UPDATE_BALANCE", "ACCOUNT", accountId, null, 
+                String.format("Balance updated to: %s", balance));
     }
 
     // Helper method to validate account type

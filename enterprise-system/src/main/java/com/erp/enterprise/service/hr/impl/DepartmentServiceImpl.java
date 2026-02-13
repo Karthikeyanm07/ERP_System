@@ -35,7 +35,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public DepartmentDTO createDepartment(DepartmentDTO departmentDTO) {
+    @org.springframework.lang.NonNull
+    public DepartmentDTO createDepartment(@org.springframework.lang.NonNull DepartmentDTO departmentDTO) {
         // Business Logic: Check if department name already exists
         if (departmentRepository.existsByName(departmentDTO.getName())) {
             throw new DuplicateResourceException("Department", "name", departmentDTO.getName());
@@ -45,10 +46,11 @@ public class DepartmentServiceImpl implements DepartmentService {
         Department department = DtoMapper.toDepartmentEntity(departmentDTO);
 
         // If manager ID is provided, set the manager
-        if (departmentDTO.getManagerId() != null) {
-            Employee manager = employeeRepository.findById(departmentDTO.getManagerId())
+        Long managerId = departmentDTO.getManagerId();
+        if (managerId != null) {
+            Employee manager = employeeRepository.findById(managerId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Employee", "id", departmentDTO.getManagerId()));
+                            "Employee", "id", managerId));
             department.setManager(manager);
         }
 
@@ -60,7 +62,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public DepartmentDTO getDepartmentById(Long id) {
+    @org.springframework.lang.NonNull
+    public DepartmentDTO getDepartmentById(@org.springframework.lang.NonNull Long id) {
         // Business Logic: Find department or throw exception
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department", "id", id));
@@ -80,7 +83,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public DepartmentDTO updateDepartment(Long id, DepartmentDTO departmentDTO) {
+    @org.springframework.lang.NonNull
+    public DepartmentDTO updateDepartment(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull DepartmentDTO departmentDTO) {
         // Business Logic: Check if department exists
         Department existingDepartment = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department", "id", id));
@@ -96,10 +100,11 @@ public class DepartmentServiceImpl implements DepartmentService {
         existingDepartment.setDescription(departmentDTO.getDescription());
 
         // Update manager if provided
-        if (departmentDTO.getManagerId() != null) {
-            Employee manager = employeeRepository.findById(departmentDTO.getManagerId())
+        Long managerId = departmentDTO.getManagerId();
+        if (managerId != null) {
+            Employee manager = employeeRepository.findById(managerId)
                     .orElseThrow(() -> new ResourceNotFoundException(
-                            "Employee", "id", departmentDTO.getManagerId()));
+                            "Employee", "id", managerId));
             existingDepartment.setManager(manager);
         } else {
             existingDepartment.setManager(null);  // Remove manager
@@ -112,7 +117,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public void deleteDepartment(Long id) {
+    public void deleteDepartment(@org.springframework.lang.NonNull Long id) {
         // Business Logic: Check if department exists
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department", "id", id));
@@ -132,7 +137,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
-    public DepartmentDTO assignManager(Long departmentId, Long managerId) {
+    @org.springframework.lang.NonNull
+    public DepartmentDTO assignManager(@org.springframework.lang.NonNull Long departmentId, @org.springframework.lang.NonNull Long managerId) {
         // Business Logic: Find department
         Department department = departmentRepository.findById(departmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Department", "id", departmentId));

@@ -8,20 +8,20 @@ import java.util.List;
 public interface DepartmentService {
 
     // Create a new department
-    DepartmentDTO createDepartment(DepartmentDTO departmentDTO);
+    @org.springframework.lang.NonNull DepartmentDTO createDepartment(@org.springframework.lang.NonNull DepartmentDTO departmentDTO);
 
     // Get department by ID
-    DepartmentDTO getDepartmentById(Long id);
+    @org.springframework.lang.NonNull DepartmentDTO getDepartmentById(@org.springframework.lang.NonNull Long id);
 
     // Get all departments
     List<DepartmentDTO> getAllDepartments();
 
     // Update department
-    DepartmentDTO updateDepartment(Long id, DepartmentDTO departmentDTO);
+    @org.springframework.lang.NonNull DepartmentDTO updateDepartment(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull DepartmentDTO departmentDTO);
 
     // Delete department
-    void deleteDepartment(Long id);
+    void deleteDepartment(@org.springframework.lang.NonNull Long id);
 
     // Assign manager to department
-    DepartmentDTO assignManager(Long departmentId, Long managerId);
+    @org.springframework.lang.NonNull DepartmentDTO assignManager(@org.springframework.lang.NonNull Long departmentId, @org.springframework.lang.NonNull Long managerId);
 }

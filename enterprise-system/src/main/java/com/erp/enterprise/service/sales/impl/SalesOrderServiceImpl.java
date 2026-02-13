@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -130,20 +132,25 @@ public class SalesOrderServiceImpl implements SalesOrderService {
         salesOrder.setNotes(request.getNotes());
 
         // Create items and validate stock
+        List<Long> productIds = request.getItems().stream()
+                .map(SalesOrderItemDTO::getProductId)
+                .collect(Collectors.toList());
+        
+        Map<Long, Integer> stockMap = getStockMap(productIds);
+
         for (SalesOrderItemDTO itemDTO : request.getItems()) {
             Product product = productRepository.findById(itemDTO.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Product", "id", itemDTO.getProductId()));
 
             // Business Logic: Check TOTAL stock availability across ALL warehouses
-            // The selected warehouse is just for shipping preference, not strict inventory check
-            Integer totalStock = stockRepository.getTotalStockForProduct(product.getId());
+            Integer totalStock = stockMap.getOrDefault(product.getId(), 0);
 
-            if (totalStock == null || totalStock < itemDTO.getQuantity()) {
+            if (totalStock < itemDTO.getQuantity()) {
                 throw new BusinessException(
                         String.format("Insufficient stock for product %s. Available: %d, Required: %d",
                                 product.getName(),
-                                totalStock != null ? totalStock : 0,
+                                totalStock,
                                 itemDTO.getQuantity()),
                         "INSUFFICIENT_STOCK"
                 );
@@ -164,6 +171,19 @@ public class SalesOrderServiceImpl implements SalesOrderService {
         // Save
         SalesOrder savedSO = salesOrderRepository.save(salesOrder);
         return DtoMapper.toSalesOrderDTO(savedSO);
+    }
+
+    private Map<Long, Integer> getStockMap(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        List<Object[]> results = stockRepository.getTotalStockForProducts(productIds);
+        return results.stream()
+                .collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> ((Number) r[1]).intValue(),
+                        (existing, replacement) -> existing
+                ));
     }
 
     @Override

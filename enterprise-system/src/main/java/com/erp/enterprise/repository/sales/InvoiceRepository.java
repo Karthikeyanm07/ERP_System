@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.sales;
 
 import com.erp.enterprise.entity.sales.Invoice;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,17 +35,19 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     // Find invoices by sales order
     Optional<Invoice> findBySalesOrderId(Long salesOrderId);
 
-    // Find invoices by status
+    // Optimized listing methods with EntityGraph to prevent N+1 queries
+    @Override
+    @EntityGraph(attributePaths = {"customer", "salesOrder"})
+    @org.springframework.lang.NonNull
+    List<Invoice> findAll();
+
+    @EntityGraph(attributePaths = {"customer", "salesOrder"})
     List<Invoice> findByStatusOrderByInvoiceDateDesc(String status);
 
-    // Find invoices in date range
-    List<Invoice> findByInvoiceDateBetweenOrderByInvoiceDateDesc(
-            LocalDate startDate, LocalDate endDate);
+    @EntityGraph(attributePaths = {"customer", "salesOrder"})
+    List<Invoice> findByInvoiceDateBetweenOrderByInvoiceDateDesc(LocalDate startDate, LocalDate endDate);
 
-    // Find overdue invoices
-    // Business Logic: Due date passed and not fully paid
-    @Query("SELECT i FROM Invoice i WHERE i.dueDate < :currentDate " +
-            "AND i.status IN ('UNPAID', 'PARTIAL', 'OVERDUE')")
+    @EntityGraph(attributePaths = {"customer", "salesOrder"})
     List<Invoice> findOverdueInvoices(@Param("currentDate") LocalDate currentDate);
 
     // Calculate total outstanding amount for customer

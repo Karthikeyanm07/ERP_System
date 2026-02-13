@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.finanace;
 
 import com.erp.enterprise.entity.finance.Expense;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,11 @@ import java.util.Optional;
  */
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"employee"})
+    @org.springframework.lang.NonNull
+    List<Expense> findAll();
 
     // Check if expense code exists
     boolean existsByExpenseCode(String expenseCode);

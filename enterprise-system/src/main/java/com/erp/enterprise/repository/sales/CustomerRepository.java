@@ -20,6 +20,10 @@ import java.util.Optional;
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
+    @Override
+    @org.springframework.lang.NonNull
+    List<Customer> findAll();
+
     // Check if customer code exists
     boolean existsByCustomerCode(String customerCode);
 

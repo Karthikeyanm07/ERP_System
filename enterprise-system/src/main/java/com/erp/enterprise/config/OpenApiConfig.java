@@ -78,16 +78,7 @@ import org.springframework.context.annotation.Configuration;
                         url = "https://opensource.org/licenses/MIT"
                 )
         ),
-        servers = {
-                @Server(
-                        url = "http://localhost:8080",
-                        description = "Local Development Server"
-                ),
-                @Server(
-                        url = "https://api.erp.com",
-                        description = "Production Server"
-                )
-        },
+
         security = @SecurityRequirement(name = "bearerAuth")
 )
 @SecurityScheme(
@@ -108,6 +99,17 @@ import org.springframework.context.annotation.Configuration;
         in = SecuritySchemeIn.HEADER
 )
 public class OpenApiConfig {
+
+    @org.springframework.beans.factory.annotation.Value("${erp.app.server-url:http://localhost:8080}")
+    private String serverUrl;
+
+    @Bean
+    public io.swagger.v3.oas.models.OpenAPI customOpenAPI() {
+        return new io.swagger.v3.oas.models.OpenAPI()
+                .addServersItem(new io.swagger.v3.oas.models.servers.Server()
+                        .url(serverUrl)
+                        .description("Default Server"));
+    }
     /**
      * Group: Authentication APIs
      */

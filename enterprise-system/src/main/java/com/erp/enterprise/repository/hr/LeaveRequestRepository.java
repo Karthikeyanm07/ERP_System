@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.hr;
 
 import com.erp.enterprise.entity.hr.LeaveRequest;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +15,11 @@ import java.util.List;
  */
 @Repository
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"employee", "leaveType", "approvedBy"})
+    @org.springframework.lang.NonNull
+    List<LeaveRequest> findAll();
 
     // Find all leave requests for an employee
     List<LeaveRequest> findByEmployeeIdOrderByCreatedAtDesc(Long employeeId);

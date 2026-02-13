@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.inventory;
 
 import com.erp.enterprise.entity.inventory.Product;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +15,11 @@ import java.util.Optional;
  */
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"category"})
+    @org.springframework.lang.NonNull
+    List<Product> findAll();
 
     // Check if product code exists
     boolean existsByProductCode(String productCode);

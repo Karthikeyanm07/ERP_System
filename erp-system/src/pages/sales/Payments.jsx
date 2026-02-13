@@ -17,7 +17,7 @@ import Input from "../../components/common/Input";
 import Card from "../../components/common/Card";
 import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
-import { Plus, CreditCard, DollarSign, Wallet } from "lucide-react";
+import { Plus, CreditCard, IndianRupee, Wallet } from "lucide-react";
 
 const Payments = () => {
   const { execute, loading } = useApi();
@@ -236,7 +236,7 @@ const Payments = () => {
         <MetricCard
           title="Total Received"
           value={`₹${totalReceived.toLocaleString()}`}
-          icon={DollarSign}
+          icon={IndianRupee}
           accent="green"
         />
         <MetricCard
@@ -254,7 +254,7 @@ const Payments = () => {
         <MetricCard
           title="Cash"
           value={`₹${byMethod["CASH"]?.toLocaleString() || 0}`}
-          icon={DollarSign}
+          icon={IndianRupee}
           accent="amber"
         />
       </div>

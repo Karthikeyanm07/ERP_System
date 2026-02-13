@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.inventory;
 
 import com.erp.enterprise.entity.inventory.StockMovement;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +15,11 @@ import java.util.List;
  */
 @Repository
 public interface StockMovementRepository extends JpaRepository<StockMovement, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"product", "warehouse", "createdBy"})
+    @org.springframework.lang.NonNull
+    List<StockMovement> findAll();
 
     // Find movements by product
     List<StockMovement> findByProductIdOrderByCreatedAtDesc(Long productId);
@@ -38,4 +44,7 @@ public interface StockMovementRepository extends JpaRepository<StockMovement, Lo
 
     // Find movements by reference
     List<StockMovement> findByReferenceTypeAndReferenceId(String referenceType, Long referenceId);
+
+    // Delete all movements for a product
+    void deleteByProductId(Long productId);
 }

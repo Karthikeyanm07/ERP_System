@@ -17,9 +17,8 @@ import {
   Building2,
   Calendar,
   FileText,
-  DollarSign,
-  Receipt,
   CreditCard,
+  IndianRupee,
   Package,
   Warehouse,
   ShoppingCart,
@@ -28,8 +27,10 @@ import {
   ClipboardList,
   FileSpreadsheet,
   Wallet,
+  Receipt,
   ChevronDown,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 
 /**
@@ -53,7 +54,7 @@ const menuItems = [
   },
   {
     name: "Finance",
-    icon: DollarSign,
+    icon: IndianRupee,
     subItems: [
       { name: "Accounts", icon: Wallet, path: "/finance/accounts" },
       { name: "Transactions", icon: Receipt, path: "/finance/transactions" },
@@ -82,6 +83,13 @@ const menuItems = [
       { name: "Sales Orders", icon: ClipboardList, path: "/sales/orders" },
       { name: "Invoices", icon: FileSpreadsheet, path: "/sales/invoices" },
       { name: "Payments", icon: CreditCard, path: "/sales/payments" },
+    ],
+  },
+  {
+    name: "Administration",
+    icon: ShieldCheck,
+    subItems: [
+      { name: "Audit Logs", icon: FileText, path: "/admin/audit-logs" },
     ],
   },
 ];

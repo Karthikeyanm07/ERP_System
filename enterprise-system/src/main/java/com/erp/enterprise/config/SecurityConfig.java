@@ -133,6 +133,8 @@ public class SecurityConfig {
         http
                 // Enable CORS with our configuration
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CSRF is disabled because we are using stateless JWT. 
+                // Security is reinforced by SameSite=Strict on our Auth cookies.
                 .csrf(csrf -> csrf.disable())
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

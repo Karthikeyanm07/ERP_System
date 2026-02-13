@@ -15,35 +15,36 @@ import java.util.List;
 public interface TransactionService {
 
     // Create transaction
-    TransactionDTO createTransaction(TransactionCreateRequest request);
+    TransactionDTO createTransaction(@org.springframework.lang.NonNull TransactionCreateRequest request);
 
     // Auto-create finance transaction when payment is received (Phase 2)
-    void autoCreatePaymentTransaction(Payment payment, Invoice invoice);
+    void autoCreatePaymentTransaction(@org.springframework.lang.NonNull Payment payment, @org.springframework.lang.NonNull Invoice invoice);
 
     // Auto-create finance transaction when purchase order is received (Phase 3)
-    void autoCreatePurchaseTransaction(PurchaseOrder purchaseOrder);
+    void autoCreatePurchaseTransaction(@org.springframework.lang.NonNull PurchaseOrder purchaseOrder);
 
     // Get transaction by ID
-    TransactionDTO getTransactionById(Long id);
+    TransactionDTO getTransactionById(@org.springframework.lang.NonNull Long id);
 
     // Get transaction by code
-    TransactionDTO getTransactionByCode(String transactionCode);
+    TransactionDTO getTransactionByCode(@org.springframework.lang.NonNull String transactionCode);
 
     // Get all transactions
     List<TransactionDTO> getAllTransactions();
 
     // Get transactions by date
-    List<TransactionDTO> getTransactionsByDate(LocalDate date);
+    List<TransactionDTO> getTransactionsByDate(@org.springframework.lang.NonNull LocalDate date);
 
     // Get transactions in date range
-    List<TransactionDTO> getTransactionsByDateRange(LocalDate startDate, LocalDate endDate);
+    List<TransactionDTO> getTransactionsByDateRange(@org.springframework.lang.NonNull LocalDate startDate, @org.springframework.lang.NonNull LocalDate endDate);
 
     // Get transactions by user
-    List<TransactionDTO> getTransactionsByUser(Long userId);
+    List<TransactionDTO> getTransactionsByUser(@org.springframework.lang.NonNull Long userId);
 
     // Get recent transactions
+    @org.springframework.lang.NonNull
     List<TransactionDTO> getRecentTransactions();
 
     // Delete transaction
-    void deleteTransaction(Long id);
+    void deleteTransaction(@org.springframework.lang.NonNull Long id);
 }

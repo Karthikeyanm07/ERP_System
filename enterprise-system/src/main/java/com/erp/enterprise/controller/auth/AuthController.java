@@ -84,7 +84,7 @@ public class AuthController {
                 .secure(true) // Always secure in production cross-site
                 .path("/")
                 .maxAge(maxAgeSeconds)
-                .sameSite("None") // REQUIRED for cross-site cookies (Vercel -> Render)
+                .sameSite("Strict") // Hardened from 'None' to 'Strict' to prevent CSRF
                 .build();
 
         response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
@@ -141,7 +141,7 @@ public class AuthController {
         Long userId = getCurrentUserId();
         return ResponseEntity.ok(authService.getProfile(userId));
     }
-
+ 
     /**
      * PATCH /api/auth/profile
      * Update current user's username and email (requires authentication).
@@ -151,7 +151,7 @@ public class AuthController {
         Long userId = getCurrentUserId();
         return ResponseEntity.ok(authService.updateProfile(userId, request));
     }
-
+ 
     /**
      * POST /api/auth/change-password
      * Change current user's password (requires authentication).
@@ -161,7 +161,7 @@ public class AuthController {
         Long userId = getCurrentUserId();
         return ResponseEntity.ok(authService.changePassword(userId, request));
     }
-
+ 
     /**
      * PATCH /api/auth/settings/session-timeout
      * Update current user's session timeout preference (requires authentication).

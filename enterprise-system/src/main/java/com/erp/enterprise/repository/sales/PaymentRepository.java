@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.sales;
 
 import com.erp.enterprise.entity.sales.Payment;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +22,11 @@ import java.util.Optional;
  */
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"invoice", "createdBy"})
+    @org.springframework.lang.NonNull
+    List<Payment> findAll();
 
     // Check if payment number exists
     boolean existsByPaymentNumber(String paymentNumber);

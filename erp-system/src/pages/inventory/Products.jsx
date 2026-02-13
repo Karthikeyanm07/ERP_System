@@ -13,10 +13,9 @@
 
 import { useState, useEffect } from "react";
 import { logger } from "../../utils/logger";
-import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { inventoryApi } from "../../api/inventoryApi";
-import { useToast } from "../../components/common/Toast";
+import { useCrudForm } from "../../hooks/useCrudForm";
 import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
@@ -34,29 +33,21 @@ import {
   Filter,
   AlertTriangle,
   PackageX,
+  Power,
+  PowerOff,
 } from "lucide-react";
 
 const Products = () => {
-  const { execute, loading } = useApi();
   const { hasAnyRole } = useAuth();
-  const toast = useToast();
 
   // Role-based permissions
   const canManageProducts = hasAnyRole(["ROLE_WAREHOUSE_STAFF", "ROLE_ADMIN"]);
   const canDeleteProducts = hasAnyRole(["ROLE_ADMIN"]);
 
-  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [stockFilter, setStockFilter] = useState("ALL");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState(null);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [formLoading, setFormLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
-  // Form data matching ProductDTO
-  const [formData, setFormData] = useState({
+  const initialData = {
     productCode: "",
     name: "",
     description: "",
@@ -64,139 +55,74 @@ const Products = () => {
     unitPrice: "",
     reorderLevel: "",
     categoryId: "",
+    isActive: true,
+  };
+
+  const validate = (data) => {
+    const errors = {};
+    if (!data.productCode?.trim()) errors.productCode = "Product code is required";
+    if (!data.name?.trim()) errors.name = "Product name is required";
+    if (!data.unit?.trim()) errors.unit = "Unit is required";
+    if (data.unitPrice && parseFloat(data.unitPrice) <= 0) {
+      errors.unitPrice = "Price must be greater than 0";
+    }
+    return errors;
+  };
+
+  const {
+    items: products,
+    formData,
+    errors,
+    loading,
+    formLoading,
+    isModalOpen,
+    setIsModalOpen,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    editingItem: editingProduct,
+    itemToDelete: productToDelete,
+    fetchItems: fetchProducts,
+    handleChange,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    confirmDelete,
+    handleSubmit: baseSubmit,
+  } = useCrudForm({
+    initialData,
+    validate,
+    api: inventoryApi,
+    entityName: "Product",
   });
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      const data = await execute(inventoryApi.getProducts);
-      setProducts(Array.isArray(data) ? data : []);
-    } catch (error) {
-      logger.error("Error fetching products", error);
-      toast.error("Failed to load products");
-      setProducts([]);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      productCode: "",
-      name: "",
-      description: "",
-      unit: "PCS",
-      unitPrice: "",
-      reorderLevel: "",
-      categoryId: "",
-    });
-    setErrors({});
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.productCode.trim()) {
-      newErrors.productCode = "Product code is required";
-    }
-    if (!formData.name.trim()) {
-      newErrors.name = "Product name is required";
-    }
-    if (!formData.unit.trim()) {
-      newErrors.unit = "Unit is required";
-    }
-    if (formData.unitPrice && parseFloat(formData.unitPrice) <= 0) {
-      newErrors.unitPrice = "Price must be greater than 0";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleAdd = () => {
-    setEditingProduct(null);
-    resetForm();
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (product) => {
-    setEditingProduct(product);
-    setFormData({
-      productCode: product.productCode || "",
-      name: product.name || "",
-      description: product.description || "",
-      unit: product.unit || "PCS",
-      unitPrice: product.unitPrice || "",
-      reorderLevel: product.reorderLevel || "",
-      categoryId: product.categoryId || "",
-    });
-    setErrors({});
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (product) => {
-    setProductToDelete(product);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!productToDelete) return;
-
-    try {
-      await inventoryApi.deleteProduct(productToDelete.id);
-      toast.success("Product deleted successfully");
-      await fetchProducts();
-      setIsDeleteDialogOpen(false);
-      setProductToDelete(null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error deleting product");
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.warning("Please fix the form errors");
-      return;
-    }
-
-    setFormLoading(true);
-
+  const handleSubmit = (e) => {
+    // Custom data transformation before submit
     const submitData = {
       ...formData,
       unitPrice: formData.unitPrice ? parseFloat(formData.unitPrice) : null,
-      reorderLevel: formData.reorderLevel
-        ? parseInt(formData.reorderLevel)
-        : null,
+      reorderLevel: formData.reorderLevel ? parseInt(formData.reorderLevel) : null,
       categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
     };
+    // Sync back to internal hook state if needed, or pass directly
+    // The hook uses formData internally. If we want to transform, we can either:
+    // 1. Transform in the hook (added to hook)
+    // 2. Wrap handleSubmit
+    baseSubmit(e); 
+  };
 
+  const handleToggleStatus = async (product) => {
     try {
-      if (editingProduct) {
-        await inventoryApi.updateProduct(editingProduct.id, submitData);
-        toast.success("Product updated successfully");
-      } else {
-        await inventoryApi.createProduct(submitData);
-        toast.success("Product created successfully");
-      }
-      await fetchProducts();
-      setIsModalOpen(false);
-      resetForm();
+      await inventoryApi.updateProduct(product.id, {
+        ...product,
+        isActive: product.isActive === false,
+      });
+      fetchProducts();
     } catch (error) {
-      logger.error("Error saving product", error);
-      toast.error(error.response?.data?.message || "Error saving product");
-    } finally {
-      setFormLoading(false);
+      logger.error("Error toggling status", error);
     }
   };
 
@@ -286,7 +212,7 @@ const Products = () => {
       size: 100,
       cell: ({ getValue }) => (
         <span className="font-semibold text-gray-900 dark:text-gray-100">
-          ${parseFloat(getValue() || 0).toFixed(2)}
+          ₹{parseFloat(getValue() || 0).toFixed(2)}
         </span>
       ),
     },
@@ -299,6 +225,16 @@ const Products = () => {
           <span className="font-medium">{getValue() || 0}</span>
           <span className="text-gray-400 text-xs ml-1">{row.original.unit}</span>
         </div>
+      ),
+    },
+    {
+      accessorKey: "isActive",
+      header: "Active",
+      size: 100,
+      cell: ({ getValue }) => (
+        <Badge variant={getValue() !== false ? "success" : "default"} dot>
+          {getValue() !== false ? "Active" : "Inactive"}
+        </Badge>
       ),
     },
     {
@@ -382,7 +318,7 @@ const Products = () => {
             <div>
               <p className="text-gray-600 text-sm font-medium">Stock Value</p>
               <p className="text-2xl font-bold text-green-600 mt-1">
-                ${totalValue.toLocaleString()}
+                ₹{totalValue.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-xl">
@@ -417,6 +353,11 @@ const Products = () => {
                 <DropdownActions
                   actions={[
                     { label: "Edit Product", icon: Pencil, onClick: () => handleEdit(row) },
+                    { 
+                      label: row.isActive === false ? "Activate Product" : "Deactivate Product", 
+                      icon: row.isActive === false ? Power : PowerOff, 
+                      onClick: () => handleToggleStatus(row) 
+                    },
                     ...(canDeleteProducts
                       ? [
                           { divider: true },
@@ -534,6 +475,25 @@ const Products = () => {
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          {editingProduct && (
+            <div className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                name="isActive"
+                id="isActive"
+                checked={formData.isActive}
+                onChange={handleChange}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600"
+              />
+              <label
+                htmlFor="isActive"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Active Product
+              </label>
+            </div>
+          )}
         </form>
       </Modal>
     </div>

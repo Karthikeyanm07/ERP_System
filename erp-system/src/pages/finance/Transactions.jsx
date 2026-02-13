@@ -339,7 +339,7 @@ const Transactions = () => {
             <div>
               <p className="text-gray-600 text-sm font-medium">Total Income</p>
               <p className="text-2xl font-bold text-green-600 mt-1">
-                ${totalIncome.toLocaleString()}
+                ₹{totalIncome.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-xl">
@@ -354,7 +354,7 @@ const Transactions = () => {
                 Total Expenses
               </p>
               <p className="text-2xl font-bold text-red-600 mt-1">
-                ${totalExpense.toLocaleString()}
+                ₹{totalExpense.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-red-100 rounded-xl">
@@ -377,7 +377,7 @@ const Transactions = () => {
                   netBalance >= 0 ? "text-blue-600" : "text-amber-600"
                 } mt-1`}
               >
-                ${netBalance.toLocaleString()}
+                ₹{netBalance.toLocaleString()}
               </p>
             </div>
             <div

@@ -9,19 +9,19 @@ import java.util.List;
 public interface AccountService {
 
     // Create account
-    AccountDTO createAccount(AccountDTO accountDTO);
+    AccountDTO createAccount(@org.springframework.lang.NonNull AccountDTO accountDTO);
 
     // Get account by ID
-    AccountDTO getAccountById(Long id);
+    AccountDTO getAccountById(@org.springframework.lang.NonNull Long id);
 
     // Get account by code
-    AccountDTO getAccountByCode(String accountCode);
+    AccountDTO getAccountByCode(@org.springframework.lang.NonNull String accountCode);
 
     // Get all accounts
     List<AccountDTO> getAllAccounts();
 
     // Get accounts by type
-    List<AccountDTO> getAccountsByType(String accountType);
+    List<AccountDTO> getAccountsByType(@org.springframework.lang.NonNull String accountType);
 
     // Get active accounts
     List<AccountDTO> getActiveAccounts();
@@ -30,17 +30,17 @@ public interface AccountService {
     List<AccountDTO> getTopLevelAccounts();
 
     // Get child accounts
-    List<AccountDTO> getChildAccounts(Long parentAccountId);
+    List<AccountDTO> getChildAccounts(@org.springframework.lang.NonNull Long parentAccountId);
 
     // Search accounts
     List<AccountDTO> searchAccounts(String keyword);
 
     // Update account
-    AccountDTO updateAccount(Long id, AccountDTO accountDTO);
+    AccountDTO updateAccount(@org.springframework.lang.NonNull Long id, @org.springframework.lang.NonNull AccountDTO accountDTO);
 
     // Delete account
-    void deleteAccount(Long id);
+    void deleteAccount(@org.springframework.lang.NonNull Long id);
 
     // Update account balance (internal use)
-    void updateAccountBalance(Long accountId);
+    void updateAccountBalance(@org.springframework.lang.NonNull Long accountId);
 }

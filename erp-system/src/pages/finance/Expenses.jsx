@@ -30,7 +30,7 @@ import {
   Receipt,
   Check,
   X,
-  DollarSign,
+  IndianRupee,
   Trash2,
   Filter,
   RefreshCw,
@@ -341,7 +341,7 @@ const Expenses = () => {
             <div>
               <p className="text-gray-600 text-sm font-medium">Pending</p>
               <p className="text-2xl font-bold text-amber-600 mt-1">
-                ${totalPending.toLocaleString()}
+                ₹{totalPending.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-amber-100 rounded-xl">
@@ -357,7 +357,7 @@ const Expenses = () => {
             <div>
               <p className="text-gray-600 text-sm font-medium">Approved</p>
               <p className="text-2xl font-bold text-green-600 mt-1">
-                ${totalApproved.toLocaleString()}
+                ₹{totalApproved.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-xl">
@@ -370,11 +370,11 @@ const Expenses = () => {
             <div>
               <p className="text-gray-600 text-sm font-medium">Paid</p>
               <p className="text-2xl font-bold text-blue-600 mt-1">
-                ${totalPaid.toLocaleString()}
+                ₹{totalPaid.toLocaleString()}
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-xl">
-              <DollarSign className="text-blue-600" size={24} />
+              <IndianRupee className="text-blue-600" size={24} />
             </div>
           </div>
         </Card>
@@ -383,7 +383,7 @@ const Expenses = () => {
             <div>
               <p className="text-gray-600 text-sm font-medium">Total</p>
               <p className="text-2xl font-bold text-purple-600 mt-1">
-                $
+                ₹
                 {expenses
                   .reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0)
                   .toLocaleString()}
@@ -457,7 +457,7 @@ const Expenses = () => {
                   );
                 }
                 if (row.status === "APPROVED") {
-                  items.push({ label: "Mark as Paid", icon: DollarSign, onClick: () => handleMarkAsPaid(row.id) });
+                  items.push({ label: "Mark as Paid", icon: IndianRupee, onClick: () => handleMarkAsPaid(row.id) });
                 }
                 if (row.status === "PENDING" || row.status === "REJECTED") {
                   if (items.length > 0) items.push({ divider: true });

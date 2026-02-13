@@ -14,10 +14,9 @@
 
 import { useState, useEffect } from "react";
 import { logger } from "../../utils/logger";
-import { useApi } from "../../hooks/useApi";
 import { useAuth } from "../../hooks/useAuth";
 import { salesApi } from "../../api/salesApi";
-import { useToast } from "../../components/common/Toast";
+import { useCrudForm } from "../../hooks/useCrudForm";
 import DataTable from "../../components/common/DataTable";
 import Button from "../../components/common/Button";
 import Modal from "../../components/common/Modal";
@@ -35,14 +34,12 @@ import {
   RefreshCw,
   Filter,
   AlertTriangle,
-  DollarSign,
+  IndianRupee,
   UserCheck,
 } from "lucide-react";
 
 const Customers = () => {
-  const { execute, loading } = useApi();
   const { hasAnyRole } = useAuth();
-  const toast = useToast();
 
   // Role-based permissions
   const canManageCustomers = hasAnyRole([
@@ -52,19 +49,11 @@ const Customers = () => {
   ]);
   const canDeleteCustomers = hasAnyRole(["ROLE_ADMIN"]);
 
-  const [customers, setCustomers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [creditFilter, setCreditFilter] = useState("ALL");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [customerToDelete, setCustomerToDelete] = useState(null);
-  const [editingCustomer, setEditingCustomer] = useState(null);
-  const [formLoading, setFormLoading] = useState(false);
-  const [errors, setErrors] = useState({});
 
-  // Form data matching CustomerDTO
-  const [formData, setFormData] = useState({
+  const initialData = {
     customerCode: "",
     name: "",
     contactPerson: "",
@@ -74,139 +63,54 @@ const Customers = () => {
     city: "",
     country: "",
     creditLimit: "",
+  };
+
+  const validate = (data) => {
+    const errors = {};
+    if (!data.customerCode.trim()) errors.customerCode = "Customer code is required";
+    if (!data.name.trim()) errors.name = "Customer name is required";
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      errors.email = "Please enter a valid email";
+    }
+    return errors;
+  };
+
+  const {
+    items: customers,
+    formData,
+    errors,
+    loading,
+    formLoading,
+    isModalOpen,
+    setIsModalOpen,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    editingItem: editingCustomer,
+    itemToDelete: customerToDelete,
+    fetchItems: fetchCustomers,
+    handleChange,
+    handleAdd,
+    handleEdit,
+    handleDelete,
+    confirmDelete,
+    handleSubmit: baseSubmit,
+  } = useCrudForm({
+    initialData,
+    validate,
+    api: salesApi,
+    entityName: "Customer",
   });
 
   useEffect(() => {
     fetchCustomers();
   }, []);
 
-  const fetchCustomers = async () => {
-    try {
-      const data = await execute(salesApi.getCustomers);
-      setCustomers(Array.isArray(data) ? data : []);
-    } catch (error) {
-      logger.error("Error fetching customers", error);
-      toast.error("Failed to load customers");
-      setCustomers([]);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      customerCode: "",
-      name: "",
-      contactPerson: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      country: "",
-      creditLimit: "",
-    });
-    setErrors({});
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.customerCode.trim()) {
-      newErrors.customerCode = "Customer code is required";
-    }
-    if (!formData.name.trim()) {
-      newErrors.name = "Customer name is required";
-    }
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleAdd = () => {
-    setEditingCustomer(null);
-    resetForm();
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (customer) => {
-    setEditingCustomer(customer);
-    setFormData({
-      customerCode: customer.customerCode || "",
-      name: customer.name || "",
-      contactPerson: customer.contactPerson || "",
-      email: customer.email || "",
-      phone: customer.phone || "",
-      address: customer.address || "",
-      city: customer.city || "",
-      country: customer.country || "",
-      creditLimit: customer.creditLimit || "",
-    });
-    setErrors({});
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (customer) => {
-    setCustomerToDelete(customer);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!customerToDelete) return;
-
-    try {
-      await salesApi.deleteCustomer(customerToDelete.id);
-      toast.success("Customer deleted successfully");
-      await fetchCustomers();
-      setIsDeleteDialogOpen(false);
-      setCustomerToDelete(null);
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Error deleting customer");
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.warning("Please fix the form errors");
-      return;
-    }
-
-    setFormLoading(true);
-
+  const handleSubmit = (e) => {
     const submitData = {
       ...formData,
-      creditLimit: formData.creditLimit
-        ? parseFloat(formData.creditLimit)
-        : null,
+      creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : null,
     };
-
-    try {
-      if (editingCustomer) {
-        await salesApi.updateCustomer(editingCustomer.id, submitData);
-        toast.success("Customer updated successfully");
-      } else {
-        await salesApi.createCustomer(submitData);
-        toast.success("Customer created successfully");
-      }
-      await fetchCustomers();
-      setIsModalOpen(false);
-      resetForm();
-    } catch (error) {
-      logger.error("Error saving customer", error);
-      toast.error(error.response?.data?.message || "Error saving customer");
-    } finally {
-      setFormLoading(false);
-    }
+    baseSubmit(e);
   };
 
   const clearFilters = () => {
@@ -221,6 +125,15 @@ const Customers = () => {
     const outstanding = parseFloat(customer.outstandingBalance) || 0;
     return limit > 0 && outstanding > limit;
   };
+
+  // Calculate stats
+  const totalCustomers = customers.length;
+  const activeCustomers = customers.filter((c) => c.isActive !== false).length;
+  const exceedingCreditCount = customers.filter(isExceedingCredit).length;
+  const totalCreditLimit = customers.reduce(
+    (sum, c) => sum + (parseFloat(c.creditLimit) || 0),
+    0
+  );
 
   // Filter customers
   const filteredCustomers = customers.filter((c) => {
@@ -241,15 +154,6 @@ const Customers = () => {
     return matchesSearch && matchesStatus && matchesCredit;
   });
 
-  // Calculate stats
-  const totalCustomers = customers.length;
-  const activeCustomers = customers.filter((c) => c.isActive !== false).length;
-  const exceedingCreditCount = customers.filter(isExceedingCredit).length;
-  const totalCreditLimit = customers.reduce(
-    (sum, c) => sum + (parseFloat(c.creditLimit) || 0),
-    0
-  );
-
   const columns = [
     {
       accessorKey: "name",
@@ -257,7 +161,7 @@ const Customers = () => {
       size: 200,
       cell: ({ getValue, row }) => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+          <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
             {getValue()?.[0]?.toUpperCase() || "C"}
           </div>
           <div className="min-w-0">
@@ -272,7 +176,7 @@ const Customers = () => {
     {
       accessorKey: "contactPerson",
       header: "Contact",
-      size: 120,
+      size: 150,
       cell: ({ getValue }) => <span className="truncate block">{getValue() || "—"}</span>,
     },
     {
@@ -288,8 +192,7 @@ const Customers = () => {
     {
       accessorKey: "phone",
       header: "Phone",
-      size: 120,
-      cell: ({ getValue }) => <span className="text-gray-600 dark:text-gray-300">{getValue() || "—"}</span>,
+      size: 130,
     },
     {
       accessorKey: "creditLimit",
@@ -297,6 +200,7 @@ const Customers = () => {
       size: 140,
       cell: ({ getValue, row }) => {
         const exceeding = isExceedingCredit(row.original);
+        const limit = parseFloat(getValue()) || 0;
         return (
           <div className="flex items-center gap-1.5">
             <span
@@ -306,7 +210,7 @@ const Customers = () => {
                   : "text-gray-900 dark:text-gray-100"
               }`}
             >
-              ${parseFloat(getValue() || 0).toLocaleString()}
+              ₹{limit.toLocaleString()}
             </span>
             {exceeding && (
               <span className="text-[10px] font-medium text-red-600 dark:text-red-300 bg-red-100 dark:bg-red-500/30 px-1.5 py-0.5 rounded">
@@ -384,7 +288,7 @@ const Customers = () => {
         <MetricCard
           title="Total Credit"
           value={`₹${totalCreditLimit.toLocaleString()}`}
-          icon={DollarSign}
+          icon={IndianRupee}
           accent="purple"
         />
       </div>
@@ -411,7 +315,7 @@ const Customers = () => {
             <select
               value={creditFilter}
               onChange={(e) => setCreditFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm cursor-pointer focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
+              className="px-3 py-2 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 rounded-lg text-sm cursor-pointer focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-[length:16px] bg-[right_8px_center] bg-no-repeat pr-8"
             >
               <option value="ALL">All Credit Status</option>
               <option value="EXCEEDING">Exceeding Credit Limit</option>

@@ -29,14 +29,13 @@ import { salesApi } from "../../api/salesApi";
 import StatsCard from "../../components/charts/StatsCard";
 import Card from "../../components/common/Card";
 import {
-  Users,
-  DollarSign,
   Package,
   ShoppingCart,
   TrendingUp,
   AlertTriangle,
   Clock,
   CheckCircle,
+  IndianRupee,
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -69,7 +68,7 @@ const Dashboard = () => {
       action: "Invoice #INV-001 created",
       module: "Sales",
       time: "3 hours ago",
-      icon: DollarSign,
+      icon: IndianRupee,
     },
     {
       id: 3,
@@ -216,7 +215,7 @@ const Dashboard = () => {
         />
         <StatsCard
           title="Revenue This Month"
-          value="$0"
+          value="₹0"
           icon={TrendingUp}
           color="green"
         />

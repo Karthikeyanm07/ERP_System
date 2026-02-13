@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.inventory;
 
 import com.erp.enterprise.entity.inventory.PurchaseOrder;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -27,17 +28,25 @@ public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Lo
     // Find by warehouse
     List<PurchaseOrder> findByWarehouseId(Long warehouseId);
 
+    // Optimized listing methods with EntityGraph to prevent N+1 queries
+    @Override
+    @EntityGraph(attributePaths = {"items", "supplier", "warehouse"})
+    @org.springframework.lang.NonNull
+    List<PurchaseOrder> findAll();
+
     // Find by status
+    @EntityGraph(attributePaths = {"items", "supplier", "warehouse"})
     List<PurchaseOrder> findByStatusOrderByOrderDateDesc(String status);
 
     // Find by date range
-    List<PurchaseOrder> findByOrderDateBetweenOrderByOrderDateDesc(
-            LocalDate startDate, LocalDate endDate);
+    @EntityGraph(attributePaths = {"items", "supplier", "warehouse"})
+    List<PurchaseOrder> findByOrderDateBetweenOrderByOrderDateDesc(LocalDate startDate, LocalDate endDate);
 
     // Find by created by
     List<PurchaseOrder> findByCreatedByIdOrderByCreatedAtDesc(Long userId);
 
     // Get recent purchase orders
+    @EntityGraph(attributePaths = {"items", "supplier", "warehouse"})
     @Query("SELECT po FROM PurchaseOrder po ORDER BY po.orderDate DESC, po.createdAt DESC")
     List<PurchaseOrder> findRecentPurchaseOrders();
 }

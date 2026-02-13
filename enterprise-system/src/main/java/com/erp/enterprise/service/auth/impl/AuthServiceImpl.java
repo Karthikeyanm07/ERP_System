@@ -152,14 +152,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ProfileResponse getProfile(Long userId) {
+    public ProfileResponse getProfile(@org.springframework.lang.NonNull Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found", "USER_NOT_FOUND"));
         return toProfileResponse(user);
     }
 
     @Override
-    public ProfileResponse updateProfile(Long userId, UpdateProfileRequest request) {
+    public ProfileResponse updateProfile(@org.springframework.lang.NonNull Long userId, UpdateProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found", "USER_NOT_FOUND"));
 
@@ -177,7 +177,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public MessageResponse changePassword(Long userId, ChangePasswordRequest request) {
+    public MessageResponse changePassword(@org.springframework.lang.NonNull Long userId, ChangePasswordRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found", "USER_NOT_FOUND"));
 
@@ -190,7 +190,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ProfileResponse updateSessionTimeout(Long userId, SessionTimeoutRequest request) {
+    public ProfileResponse updateSessionTimeout(@org.springframework.lang.NonNull Long userId, SessionTimeoutRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found", "USER_NOT_FOUND"));
         user.setSessionTimeoutMinutes(request.getSessionTimeoutMinutes());

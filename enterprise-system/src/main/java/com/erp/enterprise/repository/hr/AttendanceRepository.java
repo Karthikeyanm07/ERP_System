@@ -1,6 +1,7 @@
 package com.erp.enterprise.repository.hr;
 
 import com.erp.enterprise.entity.hr.Attendance;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +18,11 @@ import java.util.Optional;
  */
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"employee"})
+    @org.springframework.lang.NonNull
+    List<Attendance> findAll();
 
     // Check if attendance exists for employee on specific date
     boolean existsByEmployeeIdAndDate(Long employeeId, LocalDate date);
