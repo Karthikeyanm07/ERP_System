@@ -84,7 +84,7 @@ public class AuthController {
                 .secure(true) // Always secure in production cross-site
                 .path("/")
                 .maxAge(maxAgeSeconds)
-                .sameSite("Strict") // Hardened from 'None' to 'Strict' to prevent CSRF
+                .sameSite("None") // Changed from 'Strict' to 'None' for cross-site (Vercel -> Render)
                 .build();
 
         response.addHeader(org.springframework.http.HttpHeaders.SET_COOKIE, cookie.toString());
