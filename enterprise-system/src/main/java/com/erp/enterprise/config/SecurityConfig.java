@@ -138,11 +138,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(unauthorizedHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Public auth endpoints only
+               .authorizeHttpRequests(auth -> auth
+                        // Public auth endpoints
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
                         .requestMatchers("/api/test/**").permitAll()
                         .requestMatchers("/api", "/api/health").permitAll()
+
+                        // Actuator endpoints - ADDED
+                        .requestMatchers("/actuator/**").permitAll()
 
                         // Swagger UI endpoints
                         .requestMatchers("/swagger-ui/**").permitAll()
