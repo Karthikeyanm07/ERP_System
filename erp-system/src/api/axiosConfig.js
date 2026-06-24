@@ -46,13 +46,22 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid - redirect to login; preserve return URL for post-login redirect
-      try {
-        const returnTo = window.location.pathname + window.location.search;
-        if (returnTo && returnTo !== "/" && returnTo !== "/login")
-          sessionStorage.setItem("erp-return-to", returnTo);
-      } catch (_) {}
-      window.location.href = "/login";
+      const requestUrl = error.config?.url || "";
+      const isAuthRequest =
+        requestUrl.includes("/auth/login") ||
+        requestUrl.includes("/auth/register") ||
+        requestUrl.includes("/auth/forgot-password") ||
+        requestUrl.includes("/auth/reset-password");
+
+      if (!isAuthRequest) {
+        // Token expired or invalid - redirect to login; preserve return URL for post-login redirect
+        try {
+          const returnTo = window.location.pathname + window.location.search;
+          if (returnTo && returnTo !== "/" && returnTo !== "/login")
+            sessionStorage.setItem("erp-return-to", returnTo);
+        } catch (_) {}
+        window.location.href = "/login";
+      }
     } else if (error.response?.status === 403) {
       // Access denied - user doesn't have permission
       // Enhance error message for frontend

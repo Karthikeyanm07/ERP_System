@@ -16,6 +16,12 @@ public interface AuthService {
     ProfileResponse updateProfile(@org.springframework.lang.NonNull Long userId, UpdateProfileRequest request);
  
     MessageResponse changePassword(@org.springframework.lang.NonNull Long userId, ChangePasswordRequest request);
+
+    MessageResponse forgotPassword(ForgotPasswordRequest request);
+
+    MessageResponse resetPassword(ResetPasswordRequest request);
+
+    MessageResponse validateResetToken(String token);
  
     ProfileResponse updateSessionTimeout(@org.springframework.lang.NonNull Long userId, SessionTimeoutRequest request);
 }

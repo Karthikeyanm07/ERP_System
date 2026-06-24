@@ -115,6 +115,35 @@ public class AuthController {
     }
 
     /**
+     * POST /api/auth/forgot-password
+     * Sends a password reset link to the user's email if the account exists.
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponse> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+        return ResponseEntity.ok(authService.forgotPassword(request));
+    }
+
+    /**
+     * GET /api/auth/reset-password/validate
+     * Checks whether a reset token is still valid before showing the reset form.
+     */
+    @GetMapping("/reset-password/validate")
+    public ResponseEntity<MessageResponse> validateResetToken(@RequestParam String token) {
+        return ResponseEntity.ok(authService.validateResetToken(token));
+    }
+
+    /**
+     * POST /api/auth/reset-password
+     * Sets a new password using a valid reset token from email.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(request));
+    }
+
+    /**
      * POST /api/auth/logout
      *
      * Logout - Clears JWT cookie

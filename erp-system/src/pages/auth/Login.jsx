@@ -129,13 +129,13 @@ const Login = () => {
               </div>
             )}
 
-            {/* Username Field */}
+            {/* Username or Email Field */}
             <Input
-              label="Username"
+              label="Username or Email"
               name="username"
               type="text"
               icon={User}
-              placeholder="Enter your username"
+              placeholder="Enter your username or email"
               value={formData.username}
               onChange={handleChange}
               required
@@ -164,12 +164,12 @@ const Login = () => {
                   Remember me
                 </span>
               </label>
-              <span
-                className="text-gray-500 dark:text-gray-400 text-sm"
-                title="Contact your administrator to reset password"
+              <Link
+                to="/forgot-password"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
-                Forgot password? Contact admin
-              </span>
+                Forgot password?
+              </Link>
             </div>
 
             {/* Submit Button */}
